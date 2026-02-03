@@ -14,6 +14,27 @@ An interactive terminal-based IDE that guides developers through unfamiliar code
 - **Configuration Management**: Simple setup with `wmti init` for API keys and preferences
 - **JSON-Based Walkthroughs**: Human-readable walkthrough documents that can be hand-written or AI-generated
 - **File Range Highlighting**: View specific line ranges within files for focused learning
+- **Security-First Design**: Read-only access with path validation, file type restrictions, and audit logging
+
+## Supported File Types
+
+For security purposes, `wmti` only supports reading the following source code and text file types:
+
+- **Go**: `.go`
+- **JavaScript/TypeScript**: `.js`, `.ts`, `.jsx`, `.tsx`
+- **Python**: `.py`
+- **Ruby**: `.rb`
+- **PHP**: `.php`
+- **Java/Kotlin/Scala**: `.java`, `.kt`, `.scala`
+- **C/C++**: `.c`, `.cpp`, `.h`, `.hpp`
+- **Rust**: `.rs`
+- **Swift**: `.swift`
+- **Shell**: `.sh`, `.bash`, `.zsh`
+- **Web**: `.html`, `.css`, `.scss`, `.sass`
+- **Documentation**: `.md`, `.txt`
+- **Configuration**: `.json`, `.yaml`, `.yml`
+
+Files larger than 10MB are automatically rejected. All file access is logged for security auditing.
 
 ## Installation
 
