@@ -77,6 +77,34 @@ func (n *Navigator) Previous() (*models.Step, error) {
 	return &n.walkthrough.Steps[n.currentStep], nil
 }
 
+// NextCycle advances to the next step, cycling back to first if at the end
+func (n *Navigator) NextCycle() (*models.Step, error) {
+	if n.walkthrough == nil {
+		return nil, fmt.Errorf("no walkthrough loaded")
+	}
+	if n.currentStep+1 >= len(n.walkthrough.Steps) {
+		// Cycle back to first step
+		n.currentStep = 0
+	} else {
+		n.currentStep++
+	}
+	return &n.walkthrough.Steps[n.currentStep], nil
+}
+
+// PreviousCycle goes to the previous step, cycling to last if at the beginning
+func (n *Navigator) PreviousCycle() (*models.Step, error) {
+	if n.walkthrough == nil {
+		return nil, fmt.Errorf("no walkthrough loaded")
+	}
+	if n.currentStep <= 0 {
+		// Cycle to last step
+		n.currentStep = len(n.walkthrough.Steps) - 1
+	} else {
+		n.currentStep--
+	}
+	return &n.walkthrough.Steps[n.currentStep], nil
+}
+
 // HasNext returns true if there are more steps
 func (n *Navigator) HasNext() bool {
 	if n.walkthrough == nil {

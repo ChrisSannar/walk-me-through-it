@@ -129,16 +129,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = StateEnteringPath
 				return m, nil
 			}
-			if m.state == StateViewing && m.navigator != nil && m.navigator.HasNext() {
-				_, err := m.navigator.Next()
+			if m.state == StateViewing && m.navigator != nil {
+				_, err := m.navigator.NextCycle()
 				if err == nil {
 					return m, m.loadCurrentStepFile()
 				}
 			}
 			return m, nil
 		case "shift+tab":
-			if m.state == StateViewing && m.navigator != nil && m.navigator.HasPrevious() {
-				_, err := m.navigator.Previous()
+			if m.state == StateViewing && m.navigator != nil {
+				_, err := m.navigator.PreviousCycle()
 				if err == nil {
 					return m, m.loadCurrentStepFile()
 				}
@@ -253,7 +253,15 @@ func (m Model) View() string {
 		if len(m.list.Items()) == 0 {
 			return m.renderCentered("Searching for walkthrough files...\n\nPress Tab to enter a path manually, or q to quit")
 		}
-		return m.list.View()
+		// Ensure list fills the entire screen to prevent artifacts
+		listView := m.list.View()
+		lines := strings.Split(listView, "\n")
+		var result strings.Builder
+		result.WriteString(listView)
+		for i := len(lines); i < m.height; i++ {
+			result.WriteString("\n")
+		}
+		return result.String()
 
 	case StateEnteringPath:
 		return m.renderCentered(fmt.Sprintf(
@@ -315,15 +323,24 @@ func (m Model) View() string {
 			fileLines = append(fileLines, "... (content truncated)")
 		}
 
-		// Combine everything
+		// Combine everything and ensure we fill the entire screen
 		var result strings.Builder
 		result.WriteString(strings.Join(fileLines, "\n"))
-		// Fill remaining space
+
+		// Fill remaining space between file content and instructions
 		currentLineCount := len(fileLines)
 		for i := currentLineCount; i < availableHeight; i++ {
 			result.WriteString("\n")
 		}
+
+		// Add instruction section
 		result.WriteString(strings.Join(instructionLines, "\n"))
+
+		// Ensure we fill to the bottom of the screen
+		totalLines := len(fileLines) + (availableHeight - len(fileLines)) + len(instructionLines)
+		for i := totalLines; i < m.height; i++ {
+			result.WriteString("\n")
+		}
 
 		return result.String()
 	}
