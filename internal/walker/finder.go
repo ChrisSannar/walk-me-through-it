@@ -11,10 +11,10 @@ import (
 func FindWalkthroughFiles(rootPath string) ([]string, error) {
 	var files []string
 
-	// Search patterns
+	// Search patterns - only files following wmti_<title>.json naming convention
 	patterns := []string{
-		"*.json",       // Root level JSON files
-		".wmti/*.json", // .wmti subdirectory
+		"wmti_*.json",       // Root level walkthrough files
+		".wmti/wmti_*.json", // .wmti subdirectory
 	}
 
 	for _, pattern := range patterns {
