@@ -1,0 +1,34 @@
+{
+  "title": "Understanding the Authentication Flow",
+  "description": "A walkthrough of how user authentication works in this codebase",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Entry Point",
+      "description": "The authentication process starts here when a user submits login credentials.",
+      "file": "src/auth/login.go",
+      "line_start": 15,
+      "line_end": 45,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Credential Validation",
+      "description": "This function validates the provided credentials against the database.",
+      "file": "src/auth/validator.go",
+      "line_start": 32,
+      "line_end": 78,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Session Creation",
+      "description": "Upon successful validation, a session is created for the user.",
+      "file": "src/auth/session.go",
+      "line_start": 10,
+      "line_end": 55,
+      "action": "read"
+    }
+  ]
+}
