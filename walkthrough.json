@@ -1,0 +1,25 @@
+{
+  "title": "Project Setup Walkthrough",
+  "description": "Understanding the basic project structure and configuration",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Main Entry Point",
+      "description": "The application starts here. This file sets up the CLI and TUI.",
+      "file": "cmd/wmti/main.go",
+      "line_start": 1,
+      "line_end": 15,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Configuration",
+      "description": "Configuration management using Viper for API keys and settings.",
+      "file": "internal/config/config.go",
+      "line_start": 1,
+      "line_end": 30,
+      "action": "read"
+    }
+  ]
+}
