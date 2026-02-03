@@ -46,6 +46,7 @@ type Model struct {
 	walker       *walker.Walker
 	rootPath     string
 	selectedFile string
+	fileContent  []string
 	err          error
 }
 
@@ -112,6 +113,10 @@ type walkthroughLoadedMsg struct {
 	nav *navigator.Navigator
 }
 
+type fileContentMsg struct {
+	lines []string
+}
+
 // Update handles messages and updates the model
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -124,6 +129,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = StateEnteringPath
 				return m, nil
 			}
+			if m.state == StateViewing && m.navigator != nil && m.navigator.HasNext() {
+				_, err := m.navigator.Next()
+				if err == nil {
+					return m, m.loadCurrentStepFile()
+				}
+			}
+			return m, nil
+		case "shift+tab":
+			if m.state == StateViewing && m.navigator != nil && m.navigator.HasPrevious() {
+				_, err := m.navigator.Previous()
+				if err == nil {
+					return m, m.loadCurrentStepFile()
+				}
+			}
+			return m, nil
 		}
 
 		// Handle state-specific key events
@@ -175,6 +195,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case walkthroughLoadedMsg:
 		m.navigator = msg.nav
 		m.state = StateViewing
+		// Load file content for the first step
+		return m, m.loadCurrentStepFile()
+
+	case fileContentMsg:
+		m.fileContent = msg.lines
 		return m, nil
 
 	case errMsg:
@@ -193,6 +218,27 @@ func (m Model) loadWalkthrough(path string) tea.Cmd {
 			return errMsg{err}
 		}
 		return walkthroughLoadedMsg{nav}
+	}
+}
+
+// loadCurrentStepFile loads the file content for the current step
+func (m Model) loadCurrentStepFile() tea.Cmd {
+	return func() tea.Msg {
+		if m.navigator == nil {
+			return errMsg{fmt.Errorf("navigator not initialized")}
+		}
+
+		step, err := m.navigator.CurrentStep()
+		if err != nil {
+			return errMsg{err}
+		}
+
+		lines, err := m.walker.ReadFileLines(step.File, step.LineStart, step.LineEnd)
+		if err != nil {
+			return errMsg{fmt.Errorf("failed to read file %s: %w", step.File, err)}
+		}
+
+		return fileContentMsg{lines}
 	}
 }
 
@@ -234,18 +280,52 @@ func (m Model) View() string {
 			return m.renderCentered(fmt.Sprintf("Error: %v", err))
 		}
 
-		content := fmt.Sprintf(
-			"Walkthrough: %s\nStep %d of %d: %s\n\nFile: %s (lines %d-%d)\n\n%s\n\nPress Tab for next, Shift+Tab for previous, q to quit",
-			wt.Title,
-			current,
-			total,
-			step.Title,
-			step.File,
-			step.LineStart,
-			step.LineEnd,
-			step.Description,
-		)
-		return m.renderTop(content)
+		// Build the file content section (top portion)
+		var fileSection strings.Builder
+		fileSection.WriteString(fmt.Sprintf("📄 %s (lines %d-%d)\n", step.File, step.LineStart, step.LineEnd))
+		fileSection.WriteString(strings.Repeat("─", m.width) + "\n")
+
+		if len(m.fileContent) > 0 {
+			for i, line := range m.fileContent {
+				lineNum := step.LineStart + i
+				fileSection.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, line))
+			}
+		} else {
+			fileSection.WriteString("Loading file content...\n")
+		}
+
+		// Build the instructions section (bottom window)
+		var instructionSection strings.Builder
+		instructionSection.WriteString(strings.Repeat("─", m.width) + "\n")
+		instructionSection.WriteString(fmt.Sprintf("📋 Step %d of %d: %s\n", current, total, step.Title))
+		instructionSection.WriteString(fmt.Sprintf("📝 %s\n", step.Description))
+		instructionSection.WriteString(fmt.Sprintf("⌨️  Tab: Next | Shift+Tab: Previous | q: Quit"))
+
+		// Combine sections with proper spacing
+		fileLines := strings.Split(fileSection.String(), "\n")
+		instructionLines := strings.Split(instructionSection.String(), "\n")
+
+		// Calculate available space for file content
+		instructionHeight := len(instructionLines)
+		availableHeight := m.height - instructionHeight - 1 // -1 for spacing
+
+		// Truncate file content if needed
+		if len(fileLines) > availableHeight {
+			fileLines = fileLines[:availableHeight-1]
+			fileLines = append(fileLines, "... (content truncated)")
+		}
+
+		// Combine everything
+		var result strings.Builder
+		result.WriteString(strings.Join(fileLines, "\n"))
+		// Fill remaining space
+		currentLineCount := len(fileLines)
+		for i := currentLineCount; i < availableHeight; i++ {
+			result.WriteString("\n")
+		}
+		result.WriteString(strings.Join(instructionLines, "\n"))
+
+		return result.String()
 	}
 
 	return ""
