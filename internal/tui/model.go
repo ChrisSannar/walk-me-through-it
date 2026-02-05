@@ -48,6 +48,7 @@ type Model struct {
 	rootPath     string
 	selectedFile string
 	fileContent  []string
+	lastAuditMsg string
 	err          error
 }
 
@@ -205,6 +206,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case fileContentMsg:
 		m.fileContent = msg.lines
+		m.lastAuditMsg = m.walker.GetLastAuditMessage()
 		m.state = StateViewing
 		return m, nil
 
@@ -318,15 +320,32 @@ func (m Model) View() string {
 
 		// Define styles with fixed heights
 		codeStyle := lipgloss.NewStyle().Width(codeWidth).Height(contentHeight)
-		sidebarStyle := lipgloss.NewStyle().Width(sidebarWidth).Height(contentHeight)
 		separatorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666"))
-		headerStyle := lipgloss.NewStyle().Width(m.width).Height(headerHeight)
-		footerStyle := lipgloss.NewStyle().Width(m.width).Height(footerHeight)
+		footerStyle := lipgloss.NewStyle().Width(m.width)
 
-		// HEADER (2 lines, full width)
-		headerContent := fmt.Sprintf("📄 %s (lines %d-%d)\n", step.File, step.LineStart, step.LineEnd)
-		headerContent += strings.Repeat("─", m.width)
-		header := headerStyle.Render(headerContent)
+		// Sidebar styles with padding and colors
+		sidebarStyle := lipgloss.NewStyle().
+			Width(sidebarWidth).
+			Height(contentHeight).
+			Padding(1, 2)
+
+		stepHeaderStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#25A065")).
+			Bold(true).
+			MarginBottom(1)
+
+		stepTitleStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFDF5")).
+			Bold(true).
+			MarginTop(1).
+			MarginBottom(1)
+
+		stepDescriptionStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#BBBBBB"))
+
+		// HEADER (2 lines, full width) - simplified, no style
+		headerContent := fmt.Sprintf("📄 %s (lines %d-%d)\n%s", step.File, step.LineStart, step.LineEnd, strings.Repeat("─", m.width))
+		header := headerContent
 
 		// CONTENT AREA: Two columns side by side
 		// Left: Code window - truncate each line to fit exactly
@@ -350,11 +369,17 @@ func (m Model) View() string {
 		}
 		codeBlock := codeStyle.Render(codeContent.String())
 
-		// Right: Sidebar (description only) - allow wrapping
-		var sidebarContent strings.Builder
-		sidebarContent.WriteString(fmt.Sprintf("📋 Step %d of %d: %s\n", current, total, step.Title))
-		sidebarContent.WriteString(fmt.Sprintf("📝 %s", step.Description))
-		sidebarBlock := sidebarStyle.Render(sidebarContent.String())
+		// Right: Sidebar with styled content
+		stepHeader := stepHeaderStyle.Render(fmt.Sprintf("📋 Step %d of %d", current, total))
+		stepTitle := stepTitleStyle.Render(step.Title)
+		stepDesc := stepDescriptionStyle.Render(step.Description)
+		sidebarContent := lipgloss.JoinVertical(
+			lipgloss.Left,
+			stepHeader,
+			stepTitle,
+			stepDesc,
+		)
+		sidebarBlock := sidebarStyle.Render(sidebarContent)
 
 		// Vertical separator
 		separator := separatorStyle.Height(contentHeight).Render(strings.Repeat("│\n", contentHeight))
@@ -369,7 +394,15 @@ func (m Model) View() string {
 
 		// FOOTER (2 lines, full width)
 		footerContent := strings.Repeat("─", m.width) + "\n"
-		footerContent += "Tab: Next | Shift+Tab: Previous | q: Quit"
+		if m.lastAuditMsg != "" {
+			// Show audit message with subtle styling, truncated to fit
+			auditText := m.lastAuditMsg
+			if len(auditText) > m.width-30 {
+				auditText = auditText[:m.width-33] + "..."
+			}
+			footerContent += auditText
+		}
+		footerContent += "\nTab: Next | Shift+Tab: Previous | q: Quit"
 		footer := footerStyle.Render(footerContent)
 
 		// Join all sections vertically

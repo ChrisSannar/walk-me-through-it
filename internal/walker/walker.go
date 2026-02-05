@@ -28,7 +28,8 @@ var allowedExtensions = []string{
 
 // Walker handles file system operations for reading source files
 type Walker struct {
-	rootPath string
+	rootPath         string
+	lastAuditMessage string
 }
 
 // NewWalker creates a new walker instance
@@ -61,7 +62,8 @@ func (w *Walker) ReadFileLines(filePath string, start, end int) ([]string, error
 	}
 
 	// Log access for audit
-	log.Printf("[AUDIT] Reading file: %s (lines %d-%d, size: %d bytes)", safePath, start, end, fileInfo.Size())
+	w.lastAuditMessage = fmt.Sprintf("[AUDIT] Reading file: %s (lines %d-%d, size: %d bytes)", safePath, start, end, fileInfo.Size())
+	log.Println(w.lastAuditMessage)
 
 	// Open file with explicit read-only flag
 	file, err := os.OpenFile(safePath, os.O_RDONLY, 0)
@@ -146,4 +148,9 @@ func (w *Walker) isAllowedExtension(filePath string) bool {
 // GetAllowedExtensions returns the list of allowed file extensions
 func GetAllowedExtensions() []string {
 	return allowedExtensions
+}
+
+// GetLastAuditMessage returns the last audit message
+func (w *Walker) GetLastAuditMessage() string {
+	return w.lastAuditMessage
 }
