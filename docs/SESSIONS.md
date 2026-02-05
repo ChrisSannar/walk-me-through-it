@@ -103,4 +103,66 @@ make lint     # Run linter
 
 The application is at a solid MVP state with core navigation and file display working. The next logical step would likely be syntax highlighting or improved visual styling to make the code more readable.
 
+## Session 2026-02-05: Layout and Text Wrapping Fixes
+
+### Problem Solved
+Fixed text wrapping issues in the code view. Long lines were wrapping and breaking the TUI layout, causing visual artifacts and misalignment.
+
+### Solution Implemented
+Implemented proper text truncation based on visual width (not character count) to handle:
+- Unicode characters (multi-byte)
+- Tab characters (displayed as 4 spaces but count as 1 rune)
+- ANSI escape codes in syntax highlighted output
+
+### Layout Architecture (Three-Section Fixed Layout)
+```
+┌─────────────────────────────────────────────────────┐
+│ Header (2 lines): File info with underline          │
+├──────────────────┬──────────────────────────────────┤
+│ Code Area        │ Sidebar                          │
+│ (70% width)      │ (30% width, min 25 chars)        │
+│ • Line numbers   │ • Step title                     │
+│ • Syntax         │ • Step description               │
+│   highlighted    │ • Progress                       │
+│ • Truncated at   │ • Controls                       │
+│   edge           │                                  │
+├──────────────────┴──────────────────────────────────┤
+│ Footer (2 lines): Controls help                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### Key Implementation Details
+
+**Width Calculations in `internal/tui/model.go`:**
+```go
+headerHeight := 2
+footerHeight := 2
+contentHeight := m.height - headerHeight - footerHeight
+sidebarWidth := int(float64(m.width) * 0.30)  // 30%, min 25 chars
+codeWidth := m.width - sidebarWidth - 2        // -2 for separator
+linePrefixWidth := 7                           // "999 │ " format
+maxCodeLineWidth := codeWidth - linePrefixWidth - 1  // 1-char safety buffer
+```
+
+**Helper Functions:**
+- `displayWidth(s string) int` - Calculates visual width (tabs = 4 spaces)
+- `truncate(s string, maxWidth int) string` - Truncates at visual width, no ellipsis
+
+### Layout Construction
+Using `lipgloss.JoinHorizontal()` and `lipgloss.JoinVertical()` for precise control:
+- Left panel: Code with line numbers
+- Vertical separator: `│` character in #666 color
+- Right panel: Step info with word wrapping enabled
+- No wrapping in code area (clean truncation at edge)
+
+### Files Modified
+- `internal/tui/model.go` - Updated `View()` function and added helper functions
+
+### Build Command
+```bash
+go build ./cmd/wmti/
+```
+
+---
+
 ***

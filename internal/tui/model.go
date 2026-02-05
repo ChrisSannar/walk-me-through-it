@@ -304,61 +304,81 @@ func (m Model) View() string {
 			return m.renderCentered(fmt.Sprintf("Error: %v", err))
 		}
 
-		// Build the file content section (top portion)
-		var fileSection strings.Builder
-		fileSection.WriteString(fmt.Sprintf("📄 %s (lines %d-%d)\n", step.File, step.LineStart, step.LineEnd))
-		fileSection.WriteString(strings.Repeat("─", m.width) + "\n")
+		// Fixed layout dimensions
+		headerHeight := 2
+		footerHeight := 2
+		contentHeight := m.height - headerHeight - footerHeight
+
+		// Calculate widths
+		sidebarWidth := int(float64(m.width) * 0.30)
+		if sidebarWidth < 25 {
+			sidebarWidth = 25
+		}
+		codeWidth := m.width - sidebarWidth - 2 // -2 for separator
+
+		// Define styles with fixed heights
+		codeStyle := lipgloss.NewStyle().Width(codeWidth).Height(contentHeight)
+		sidebarStyle := lipgloss.NewStyle().Width(sidebarWidth).Height(contentHeight)
+		separatorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666"))
+		headerStyle := lipgloss.NewStyle().Width(m.width).Height(headerHeight)
+		footerStyle := lipgloss.NewStyle().Width(m.width).Height(footerHeight)
+
+		// HEADER (2 lines, full width)
+		headerContent := fmt.Sprintf("📄 %s (lines %d-%d)\n", step.File, step.LineStart, step.LineEnd)
+		headerContent += strings.Repeat("─", m.width)
+		header := headerStyle.Render(headerContent)
+
+		// CONTENT AREA: Two columns side by side
+		// Left: Code window - truncate each line to fit exactly
+		var codeContent strings.Builder
+		// Prefix is: "999 │ " = 4 digits + space + │ + space = 7 chars
+		linePrefixWidth := 7
+		maxCodeLineWidth := codeWidth - linePrefixWidth - 1 // -1 for safety buffer
 
 		if len(m.fileContent) > 0 {
 			for i, line := range m.fileContent {
+				if i >= contentHeight {
+					break
+				}
 				lineNum := step.LineStart + i
-				fileSection.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, line))
+				// Truncate line to fit using visual width (handles tabs as 4 spaces)
+				truncatedLine := truncate(line, maxCodeLineWidth)
+				codeContent.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, truncatedLine))
 			}
 		} else {
-			fileSection.WriteString("Loading file content...\n")
+			codeContent.WriteString("Loading file content...\n")
 		}
+		codeBlock := codeStyle.Render(codeContent.String())
 
-		// Build the instructions section (bottom window)
-		var instructionSection strings.Builder
-		instructionSection.WriteString(strings.Repeat("─", m.width) + "\n")
-		instructionSection.WriteString(fmt.Sprintf("📋 Step %d of %d: %s\n", current, total, step.Title))
-		instructionSection.WriteString(fmt.Sprintf("📝 %s\n", step.Description))
-		instructionSection.WriteString(fmt.Sprintf("⌨️  Tab: Next | Shift+Tab: Previous | q: Quit"))
+		// Right: Sidebar (description only) - allow wrapping
+		var sidebarContent strings.Builder
+		sidebarContent.WriteString(fmt.Sprintf("📋 Step %d of %d: %s\n", current, total, step.Title))
+		sidebarContent.WriteString(fmt.Sprintf("📝 %s", step.Description))
+		sidebarBlock := sidebarStyle.Render(sidebarContent.String())
 
-		// Combine sections with proper spacing
-		fileLines := strings.Split(fileSection.String(), "\n")
-		instructionLines := strings.Split(instructionSection.String(), "\n")
+		// Vertical separator
+		separator := separatorStyle.Height(contentHeight).Render(strings.Repeat("│\n", contentHeight))
 
-		// Calculate available space for file content
-		instructionHeight := len(instructionLines)
-		availableHeight := m.height - instructionHeight - 1 // -1 for spacing
+		// Join content horizontally
+		contentRow := lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			codeBlock,
+			separator,
+			sidebarBlock,
+		)
 
-		// Truncate file content if needed
-		if len(fileLines) > availableHeight {
-			fileLines = fileLines[:availableHeight-1]
-			fileLines = append(fileLines, "... (content truncated)")
-		}
+		// FOOTER (2 lines, full width)
+		footerContent := strings.Repeat("─", m.width) + "\n"
+		footerContent += "Tab: Next | Shift+Tab: Previous | q: Quit"
+		footer := footerStyle.Render(footerContent)
 
-		// Combine everything and ensure we fill the entire screen
-		var result strings.Builder
-		result.WriteString(strings.Join(fileLines, "\n"))
-
-		// Fill remaining space between file content and instructions
-		currentLineCount := len(fileLines)
-		for i := currentLineCount; i < availableHeight; i++ {
-			result.WriteString("\n")
-		}
-
-		// Add instruction section
-		result.WriteString(strings.Join(instructionLines, "\n"))
-
-		// Ensure we fill to the bottom of the screen
-		totalLines := len(fileLines) + (availableHeight - len(fileLines)) + len(instructionLines)
-		for i := totalLines; i < m.height; i++ {
-			result.WriteString("\n")
-		}
-
-		return result.String()
+		// Join all sections vertically
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			header,
+			contentRow,
+			footer,
+		)
 	}
 
 	return ""
@@ -403,3 +423,54 @@ func (m Model) renderTop(content string) string {
 
 // Helper to satisfy interface
 var _ io.Writer = (*strings.Builder)(nil)
+
+// displayWidth returns the visual width of a string (handles Unicode properly)
+func displayWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		if r == '\t' {
+			width += 4 // Tab is typically 4 spaces
+		} else if r < 32 {
+			// Control characters - ignore or count as 0
+		} else {
+			width++
+		}
+	}
+	return width
+}
+
+// padRight pads a string with spaces to the right to reach the desired visual width
+func padRight(s string, width int) string {
+	currentWidth := displayWidth(s)
+	for currentWidth < width {
+		s += " "
+		currentWidth++
+	}
+	return s
+}
+
+// truncate truncates a string to fit within the maximum visual width
+func truncate(s string, maxWidth int) string {
+	if displayWidth(s) <= maxWidth {
+		return s
+	}
+
+	// Need to truncate
+	result := ""
+	width := 0
+	for _, r := range s {
+		runeWidth := 1
+		if r == '\t' {
+			runeWidth = 4
+		}
+
+		if width+runeWidth > maxWidth-3 {
+			// Don't have room for this rune, add ellipsis instead
+			return result + "..."
+		}
+
+		result += string(r)
+		width += runeWidth
+	}
+	return result
+}
