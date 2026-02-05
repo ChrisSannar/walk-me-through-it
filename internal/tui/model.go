@@ -23,6 +23,7 @@ const (
 	StateEnteringPath
 	StateLoading
 	StateViewing
+	StateLoadingStep
 )
 
 // walkthroughItem represents a walkthrough file for the list
@@ -132,7 +133,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == StateViewing && m.navigator != nil {
 				_, err := m.navigator.NextCycle()
 				if err == nil {
-					return m, m.loadCurrentStepFile()
+					m.state = StateLoadingStep
+					m.fileContent = []string{}
+					return m, tea.Batch(tea.ClearScreen, m.loadCurrentStepFile())
 				}
 			}
 			return m, nil
@@ -140,7 +143,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == StateViewing && m.navigator != nil {
 				_, err := m.navigator.PreviousCycle()
 				if err == nil {
-					return m, m.loadCurrentStepFile()
+					m.state = StateLoadingStep
+					m.fileContent = []string{}
+					return m, tea.Batch(tea.ClearScreen, m.loadCurrentStepFile())
 				}
 			}
 			return m, nil
@@ -200,6 +205,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case fileContentMsg:
 		m.fileContent = msg.lines
+		m.state = StateViewing
 		return m, nil
 
 	case errMsg:
@@ -271,6 +277,16 @@ func (m Model) View() string {
 
 	case StateLoading:
 		return m.renderCentered("Loading walkthrough...")
+
+	case StateLoadingStep:
+		if m.navigator == nil {
+			return m.renderCentered("Error: Navigator not initialized")
+		}
+		step, err := m.navigator.CurrentStep()
+		if err != nil {
+			return m.renderCentered(fmt.Sprintf("Error: %v", err))
+		}
+		return m.renderCentered(fmt.Sprintf("Loading step...\n\n📄 %s\n📝 %s", step.Title, step.Description))
 
 	case StateViewing:
 		if m.navigator == nil {
