@@ -124,7 +124,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "ctrl+c":
+		case "ctrl+c":
+			return m, tea.Quit
+		case "q":
+			if m.state == StateViewing {
+				// Go back to file selection without rescanning
+				m.navigator = nil
+				m.fileContent = []string{}
+				m.selectedFile = ""
+				if len(m.list.Items()) == 0 {
+					m.state = StateEnteringPath
+				} else {
+					m.state = StateSelecting
+				}
+				return m, nil
+			}
 			return m, tea.Quit
 		case "tab":
 			if m.state == StateSelecting && len(m.list.Items()) == 0 {
@@ -309,7 +323,7 @@ func (m Model) View() string {
 		// Fixed layout dimensions
 		headerHeight := 2
 		footerHeight := 2
-		contentHeight := m.height - headerHeight - footerHeight
+		contentHeight := m.height - headerHeight - footerHeight - 3 // The '3' is added to prevent the header from being pushed off. I don't know why it works, it just does
 
 		// Calculate widths
 		sidebarWidth := int(float64(m.width) * 0.30)
@@ -400,7 +414,7 @@ func (m Model) View() string {
 			if len(auditText) > m.width-30 {
 				auditText = auditText[:m.width-33] + "..."
 			}
-			footerContent += auditText
+			footerContent += auditText + "\n"
 		}
 		footerContent += "\nTab: Next | Shift+Tab: Previous | q: Quit"
 		footer := footerStyle.Render(footerContent)
