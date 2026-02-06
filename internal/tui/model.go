@@ -50,6 +50,7 @@ type Model struct {
 	fileContent  []string
 	lastAuditMsg string
 	err          error
+	styles       *Styles
 }
 
 // NewModel creates a new TUI model
@@ -80,6 +81,7 @@ func NewModel() Model {
 		list:      l,
 		textInput: ti,
 		walker:    walker.NewWalker(cwd),
+		styles:    NewStyles(),
 	}
 }
 
@@ -320,46 +322,81 @@ func (m Model) View() string {
 			return m.renderCentered(fmt.Sprintf("Error: %v", err))
 		}
 
-		// Fixed layout dimensions
-		headerHeight := 2
-		footerHeight := 2
-		contentHeight := m.height - headerHeight - footerHeight - 3 // The '3' is added to prevent the header from being pushed off. I don't know why it works, it just does
-
-		// Calculate widths
+		// Calculate widths first (needed for content)
 		sidebarWidth := int(float64(m.width) * 0.30)
 		if sidebarWidth < 25 {
 			sidebarWidth = 25
 		}
 		codeWidth := m.width - sidebarWidth - 2 // -2 for separator
 
-		// Define styles with fixed heights
-		codeStyle := lipgloss.NewStyle().Width(codeWidth).Height(contentHeight)
-		separatorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666"))
-		footerStyle := lipgloss.NewStyle().Width(m.width)
+		// STEP 1: Build header and footer first to get their actual heights
+		// HEADER - styled with background and borders
+		headerContent := lipgloss.JoinVertical(
+			lipgloss.Left,
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				"📄 ",
+				m.styles.HeaderFileStyle.Render(step.File),
+			),
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.HeaderLineLabelStyle.Render("lines "),
+				m.styles.HeaderLineStyle.Render(fmt.Sprintf("%d-%d", step.LineStart, step.LineEnd)),
+			),
+		)
+		headerInner := m.styles.HeaderStyle.Render(headerContent)
+		// Wrap with full-width background using border
+		header := lipgloss.JoinVertical(
+			lipgloss.Left,
+			m.styles.HeaderBorderStyle.Render(strings.Repeat("─", m.width)),
+			headerInner,
+		)
 
-		// Sidebar styles with padding and colors
-		sidebarStyle := lipgloss.NewStyle().
-			Width(sidebarWidth).
-			Height(contentHeight).
-			Padding(1, 2)
+		// FOOTER - styled with keybinding boxes and color-coded content
+		keybindings := lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			m.styles.RenderKeybinding("Tab", "Next"),
+			" ",
+			m.styles.RenderKeybinding("Shift+Tab", "Previous"),
+			" ",
+			m.styles.RenderKeybinding("q", "Quit"),
+		)
 
-		stepHeaderStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#25A065")).
-			Bold(true).
-			MarginBottom(1)
+		var footerContent string
+		if m.lastAuditMsg != "" {
+			// Truncate audit message to fit
+			auditText := m.lastAuditMsg
+			if len(auditText) > m.width-4 {
+				auditText = auditText[:m.width-7] + "..."
+			}
+			auditStyled := m.styles.AuditMsgStyle.Render("🔒 " + auditText)
+			footerContent = lipgloss.JoinVertical(
+				lipgloss.Left,
+				auditStyled,
+				" ",
+				keybindings,
+			)
+		} else {
+			footerContent = keybindings
+		}
+		footerInner := m.styles.FooterStyle.Render(footerContent)
+		// Wrap with full-width border
+		footer := lipgloss.JoinVertical(
+			lipgloss.Left,
+			footerInner,
+			m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width)),
+		)
 
-		stepTitleStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFDF5")).
-			Bold(true).
-			MarginTop(1).
-			MarginBottom(1)
+		// STEP 2: Calculate content height based on actual header/footer heights
+		headerHeight := lipgloss.Height(header)
+		footerHeight := lipgloss.Height(footer)
+		contentHeight := m.height - headerHeight - footerHeight - 2
+		if contentHeight < 3 {
+			contentHeight = 3 // Minimum content area
+		}
 
-		stepDescriptionStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#BBBBBB"))
-
-		// HEADER (2 lines, full width) - simplified, no style
-		headerContent := fmt.Sprintf("📄 %s (lines %d-%d)\n%s", step.File, step.LineStart, step.LineEnd, strings.Repeat("─", m.width))
-		header := headerContent
+		// STEP 3: Update styles and render content with calculated height
+		m.styles.SetDimensions(m.width, codeWidth, sidebarWidth, contentHeight)
 
 		// CONTENT AREA: Two columns side by side
 		// Left: Code window - truncate each line to fit exactly
@@ -381,22 +418,22 @@ func (m Model) View() string {
 		} else {
 			codeContent.WriteString("Loading file content...\n")
 		}
-		codeBlock := codeStyle.Render(codeContent.String())
+		codeBlock := m.styles.CodeStyle.Render(codeContent.String())
 
 		// Right: Sidebar with styled content
-		stepHeader := stepHeaderStyle.Render(fmt.Sprintf("📋 Step %d of %d", current, total))
-		stepTitle := stepTitleStyle.Render(step.Title)
-		stepDesc := stepDescriptionStyle.Render(step.Description)
+		stepHeader := m.styles.StepHeaderStyle.Render(fmt.Sprintf("📋 Step %d of %d", current, total))
+		stepTitle := m.styles.StepTitleStyle.Render(step.Title)
+		stepDesc := m.styles.StepDescriptionStyle.Render(step.Description)
 		sidebarContent := lipgloss.JoinVertical(
 			lipgloss.Left,
 			stepHeader,
 			stepTitle,
 			stepDesc,
 		)
-		sidebarBlock := sidebarStyle.Render(sidebarContent)
+		sidebarBlock := m.styles.SidebarStyle.Render(sidebarContent)
 
 		// Vertical separator
-		separator := separatorStyle.Height(contentHeight).Render(strings.Repeat("│\n", contentHeight))
+		separator := m.styles.SeparatorStyle.Height(contentHeight).Render(strings.Repeat("│\n", contentHeight))
 
 		// Join content horizontally
 		contentRow := lipgloss.JoinHorizontal(
@@ -406,20 +443,7 @@ func (m Model) View() string {
 			sidebarBlock,
 		)
 
-		// FOOTER (2 lines, full width)
-		footerContent := strings.Repeat("─", m.width) + "\n"
-		if m.lastAuditMsg != "" {
-			// Show audit message with subtle styling, truncated to fit
-			auditText := m.lastAuditMsg
-			if len(auditText) > m.width-30 {
-				auditText = auditText[:m.width-33] + "..."
-			}
-			footerContent += auditText + "\n"
-		}
-		footerContent += "\nTab: Next | Shift+Tab: Previous | q: Quit"
-		footer := footerStyle.Render(footerContent)
-
-		// Join all sections vertically
+		// STEP 4: Join all sections vertically
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			header,
