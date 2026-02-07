@@ -2,6 +2,11 @@
 
 Here's the place to put the human readable ideas, potential features, and goals for the project.
 
+## Next
+
+ - Fix the truncation bug (there's still one line that isn't truncating properly)
+ - Have the whole code space be the same color
+
 ## Goals
 
 ### MVP

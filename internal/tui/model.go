@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/chrissannar/walk-me-through-it/internal/highlighter"
 	"github.com/chrissannar/walk-me-through-it/internal/navigator"
 	"github.com/chrissannar/walk-me-through-it/internal/walker"
 )
@@ -51,6 +52,7 @@ type Model struct {
 	lastAuditMsg string
 	err          error
 	styles       *Styles
+	highlighter  *highlighter.Highlighter
 }
 
 // NewModel creates a new TUI model
@@ -76,12 +78,13 @@ func NewModel() Model {
 	ti.Focus()
 
 	return Model{
-		state:     StateSelecting,
-		rootPath:  cwd,
-		list:      l,
-		textInput: ti,
-		walker:    walker.NewWalker(cwd),
-		styles:    NewStyles(),
+		state:       StateSelecting,
+		rootPath:    cwd,
+		list:        l,
+		textInput:   ti,
+		walker:      walker.NewWalker(cwd),
+		styles:      NewStyles(),
+		highlighter: highlighter.NewHighlighter(highlighter.ThemeDracula),
 	}
 }
 
@@ -399,26 +402,70 @@ func (m Model) View() string {
 		m.styles.SetDimensions(m.width, codeWidth, sidebarWidth, contentHeight)
 
 		// CONTENT AREA: Two columns side by side
-		// Left: Code window - truncate each line to fit exactly
-		var codeContent strings.Builder
+		// Left: Code window with syntax highlighting
 		// Prefix is: "999 │ " = 4 digits + space + │ + space = 7 chars
 		linePrefixWidth := 7
 		maxCodeLineWidth := codeWidth - linePrefixWidth - 1 // -1 for safety buffer
 
+		// Highlight code content
+		var codeBlock string
 		if len(m.fileContent) > 0 {
-			for i, line := range m.fileContent {
-				if i >= contentHeight {
-					break
+			highlightedLines, err := m.highlighter.HighlightFile(step.File, m.fileContent, step.LineStart)
+			if err != nil || len(highlightedLines) == 0 {
+				// Fallback to plain text if highlighting fails
+				var codeContent strings.Builder
+				for i, line := range m.fileContent {
+					if i >= contentHeight {
+						break
+					}
+					lineNum := step.LineStart + i
+					truncatedLine := truncate(line, maxCodeLineWidth)
+					codeContent.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, truncatedLine))
 				}
-				lineNum := step.LineStart + i
-				// Truncate line to fit using visual width (handles tabs as 4 spaces)
-				truncatedLine := truncate(line, maxCodeLineWidth)
-				codeContent.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, truncatedLine))
+				codeBlock = m.styles.CodeStyle.Render(codeContent.String())
+			} else {
+				// Render highlighted lines with proper width tracking
+				var codeContent strings.Builder
+				for i, hlLine := range highlightedLines {
+					if i >= contentHeight {
+						break
+					}
+					// Render line number
+					lineNumStr := fmt.Sprintf("%4d │ ", hlLine.LineNumber)
+					codeContent.WriteString(lineNumStr)
+
+					// Track remaining width for this line
+					remainingWidth := maxCodeLineWidth
+
+					// Render highlighted tokens with width tracking
+					for _, token := range hlLine.Tokens {
+						tokenWidth := displayWidth(token.Text)
+
+						if tokenWidth > remainingWidth {
+							// Token doesn't fit - truncate it
+							if remainingWidth >= 0 {
+								truncatedText := truncate(token.Text, remainingWidth)
+								codeContent.WriteString(token.Style.Render(truncatedText))
+							}
+							break // Stop rendering more tokens
+						}
+
+						// Token fits - render it
+						codeContent.WriteString(token.Style.Render(token.Text))
+						remainingWidth -= tokenWidth
+
+						// If no width left, stop
+						if remainingWidth <= 0 {
+							break
+						}
+					}
+					codeContent.WriteString("\n")
+				}
+				codeBlock = m.styles.CodeStyle.Render(codeContent.String())
 			}
 		} else {
-			codeContent.WriteString("Loading file content...\n")
+			codeBlock = m.styles.CodeStyle.Render("Loading file content...\n")
 		}
-		codeBlock := m.styles.CodeStyle.Render(codeContent.String())
 
 		// Right: Sidebar with styled content
 		stepHeader := m.styles.StepHeaderStyle.Render(fmt.Sprintf("📋 Step %d of %d", current, total))

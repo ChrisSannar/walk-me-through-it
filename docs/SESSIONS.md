@@ -207,3 +207,78 @@ go build ./cmd/wmti/
 
 ## Status
 The build currently compiles successfully and tests pass. The header content is confirmed to be generated correctly in the debug logs.
+
+---
+
+## Session 2026-02-06: Syntax Highlighting and Theming
+
+### What Was Accomplished
+
+#### 1. Dynamic Layout System (`internal/tui/model.go`)
+- Fixed header/footer display issues using `lipgloss.Height()` for dynamic height calculation
+- Header and footer now have "placement priority" - they render first, content fills remaining space
+- Content area has minimum 3-line protection
+
+#### 2. Navigation Improvements (`internal/tui/model.go`)
+- 'q' key now returns to file selection page (instead of quitting app)
+- Ctrl+C still quits the entire application
+- No rescanning when going back - uses previously found files
+
+#### 3. UI Theming System (`internal/tui/styles.go`)
+- Extracted all styling to dedicated file
+- **3 UI Themes**: Dark, Light, Midnight
+- **ThemeColors struct** for easy theme swapping
+- Methods: `SetUITheme()`, `GetUITheme()`, `applyTheme()`
+
+#### 4. Syntax Highlighting (NEW: `internal/highlighter/highlighter.go`)
+- Integrated **Chroma** library (`github.com/alecthomas/chroma/v2`)
+- **6 Code Themes**: Monokai, Dracula, GitHub, OneDark, Solarized, Vim
+- **20+ Language Support**: Go, JS/TS/JSX/TSX, Python, Ruby, PHP, Java/Kotlin/Scala, C/C++, Rust, Swift, Shell, HTML/CSS/SCSS, Markdown, JSON, YAML
+- **Caching**: LRU cache (100 files max) with thread-safe RWMutex
+- Cache key: `filename:startLine:lineCount`
+
+#### 5. Text Truncation with Highlighting (`internal/tui/model.go`)
+- Fixed wrapping issues when code exceeds terminal width
+- Tracks `remainingWidth` as tokens render
+- Truncates individual tokens when they exceed available space
+- Uses `displayWidth()` function to handle Unicode/tabs properly
+
+### File Structure
+```
+internal/
+├── tui/
+│   ├── model.go          # Main TUI - MODIFIED (dynamic heights, highlighting, navigation)
+│   └── styles.go         # NEW - UI theming system
+├── highlighter/
+│   └── highlighter.go    # NEW - Chroma-based syntax highlighting
+├── walker/
+│   └── walker.go         # File reading (allowedExtensions reference)
+└── navigator/
+    └── navigator.go      # Walkthrough navigation (unchanged)
+```
+
+### Working Features
+- File selection with list UI
+- Step navigation (Tab/Shift+Tab)
+- Styled header/footer with keybinding boxes
+- Full syntax highlighting for supported languages
+- Dynamic layout that adapts to terminal size
+- Proper text truncation for long lines
+
+### Default Configuration
+- UI Theme: Dark (`ThemeDark`)
+- Code Theme: Dracula (`CodeThemeDracula`)
+
+### Build Status
+✅ Tests passing
+✅ Linting clean
+✅ Build successful
+
+### Open Questions to Address Next Session
+1. **Audit message positioning**: Footer layout may need adjustment based on terminal width
+2. **Very long filenames**: Header truncation not yet implemented for file paths
+3. **Theme synchronization**: UI theme and code theme are independent - should they be linked?
+4. **Cache size**: Currently limited to 100 entries - is this appropriate for typical usage?
+5. **Theme switching UI**: Add keybindings to cycle through themes at runtime?
+6. **Configuration file**: Persist user's theme preferences?
+7. **Line number styling**: Make line numbers themable (currently hardcoded)?
