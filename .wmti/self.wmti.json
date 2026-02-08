@@ -1,0 +1,34 @@
+{
+  "title": "Understanding Walkthrough Files",
+  "description": "A walkthrough that explains the structure of .wmti.json files using this file as an example",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Walkthrough Structure",
+      "description": "Every .wmti.json file starts with metadata: title, description, and version. The title appears in the file selection list.",
+      "file": ".wmti/self.wmti.json",
+      "line_start": 1,
+      "line_end": 5,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Steps Array",
+      "description": "The 'steps' array contains all navigation points. Each step has an ID, title, description, file path, and line range.",
+      "file": ".wmti/self.wmti.json",
+      "line_start": 6,
+      "line_end": 18,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Step Properties",
+      "description": "Each step specifies which file to open and which lines to highlight. The 'action' field determines what to do (currently only 'read' is supported).",
+      "file": ".wmti/self.wmti.json",
+      "line_start": 10,
+      "line_end": 17,
+      "action": "read"
+    }
+  ]
+}

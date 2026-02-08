@@ -1,0 +1,124 @@
+{
+  "title": "Improving model.go Organization",
+  "description": "A walkthrough of the current model.go structure and recommendations for better code organization and maintainability",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Current Model Structure",
+      "description": "The Model struct holds all TUI state including: application state (selecting, viewing, loading), dimensions (width, height), UI components (list, textInput), business logic components (navigator, walker, highlighter), and file content. This is a lot of responsibility for one struct.",
+      "file": "internal/tui/model.go",
+      "line_start": 40,
+      "line_end": 56,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Problem: File Too Large",
+      "description": "model.go is 694 lines long, violating the single responsibility principle. It handles state management, UI rendering, business logic, keyboard handling, and utility functions all in one file. This makes the code hard to navigate and maintain.",
+      "file": "internal/tui/model.go",
+      "line_start": 1,
+      "line_end": 30,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Issue: Massive View Method",
+      "description": "The View() method spans lines 345-575 (230 lines!) and handles all rendering logic for different states. This should be split into separate view components or at least separate methods for each state (StateSelecting, StateViewing, etc.).",
+      "file": "internal/tui/model.go",
+      "line_start": 345,
+      "line_end": 380,
+      "action": "read"
+    },
+    {
+      "id": 4,
+      "title": "Issue: Mixed Concerns in Update",
+      "description": "The Update() method handles keyboard events, window resizing, file loading messages, and state transitions all in one place. Lines 183-310 mix message handling, state-specific logic, and navigation. This should be separated into handler methods.",
+      "file": "internal/tui/model.go",
+      "line_start": 182,
+      "line_end": 220,
+      "action": "read"
+    },
+    {
+      "id": 5,
+      "title": "Issue: Utility Functions in Main File",
+      "description": "Helper functions like displayWidth(), padRight(), truncate(), and truncateClean() are general-purpose utilities that don't belong in the model file. They should be extracted to a separate utils.go file for reuse and better organization.",
+      "file": "internal/tui/model.go",
+      "line_start": 617,
+      "line_end": 640,
+      "action": "read"
+    },
+    {
+      "id": 6,
+      "title": "Issue: Message Types Mixed In",
+      "description": "Message type definitions (walkthroughFilesMsg, errMsg, etc.) are defined inline in model.go. These should be in a separate messages.go file since they're used across multiple components and represent the communication protocol.",
+      "file": "internal/tui/model.go",
+      "line_start": 165,
+      "line_end": 181,
+      "action": "read"
+    },
+    {
+      "id": 7,
+      "title": "Issue: Template Creation Logic",
+      "description": "The createSelfTemplate() method creates a JSON template string. This logic doesn't belong in the Model struct - it should be in a separate template.go file or even moved to the init command where it makes more sense contextually.",
+      "file": "internal/tui/model.go",
+      "line_start": 125,
+      "line_end": 164,
+      "action": "read"
+    },
+    {
+      "id": 8,
+      "title": "Recommendation: Extract Utilities",
+      "description": "Create internal/tui/utils.go and move displayWidth(), padRight(), truncate(), and truncateClean() there. These are pure functions that can be tested independently and may be useful in other parts of the TUI.",
+      "file": "internal/tui/model.go",
+      "line_start": 668,
+      "line_end": 694,
+      "action": "read"
+    },
+    {
+      "id": 9,
+      "title": "Recommendation: Extract Messages",
+      "description": "Create internal/tui/messages.go with all message types: walkthroughFilesMsg, errMsg, walkthroughLoadedMsg, fileContentMsg. Keep them together for clarity and import them where needed.",
+      "file": "internal/tui/model.go",
+      "line_start": 165,
+      "line_end": 181,
+      "action": "read"
+    },
+    {
+      "id": 10,
+      "title": "Recommendation: Split View Rendering",
+      "description": "Create internal/tui/view.go and move the View() method there. Better yet, create separate components: FileSelectionView, WalkthroughView, LoadingView. Each handles one state's rendering. This makes testing easier and follows component-based architecture.",
+      "file": "internal/tui/model.go",
+      "line_start": 384,
+      "line_end": 420,
+      "action": "read"
+    },
+    {
+      "id": 11,
+      "title": "Recommendation: Split Update Handlers",
+      "description": "Instead of one giant Update() method, create handler methods like handleKeyMsg(), handleWindowSize(), handleWalkthroughLoaded(). Group related logic together. This makes the code easier to test and modify.",
+      "file": "internal/tui/model.go",
+      "line_start": 182,
+      "line_end": 200,
+      "action": "read"
+    },
+    {
+      "id": 12,
+      "title": "Recommendation: Separate State Logic",
+      "description": "The Model struct mixes UI state (width, height, list, textInput) with business logic state (navigator, walker, fileContent). Consider creating a StateManager or breaking into smaller structs: UIState, NavigationState, FileState.",
+      "file": "internal/tui/model.go",
+      "line_start": 40,
+      "line_end": 56,
+      "action": "read"
+    },
+    {
+      "id": 13,
+      "title": "Target Structure",
+      "description": "After refactoring, the internal/tui/ directory should have: model.go (just the Model struct and Init), update.go (message handlers), view.go (rendering logic), messages.go (all message types), utils.go (helper functions), template.go (self template creation). Each file under 150 lines with clear responsibility.",
+      "file": "internal/tui/model.go",
+      "line_start": 1,
+      "line_end": 20,
+      "action": "read"
+    }
+  ]
+}
