@@ -180,6 +180,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, m.loadWalkthrough(item.path)
 				}
 			}
+
+			// Handle looping navigation
+			switch msg.String() {
+			case "down", "j":
+				if m.list.Index() == len(m.list.Items())-1 {
+					// At last item, loop to first
+					m.list.Select(0)
+					return m, nil
+				}
+			case "up", "k":
+				if m.list.Index() == 0 {
+					// At first item, loop to last
+					m.list.Select(len(m.list.Items()) - 1)
+					return m, nil
+				}
+			}
+
 			var cmd tea.Cmd
 			m.list, cmd = m.list.Update(msg)
 			return m, cmd
@@ -351,8 +368,8 @@ func (m Model) View() string {
 		// Wrap with full-width background using border
 		header := lipgloss.JoinVertical(
 			lipgloss.Left,
-			m.styles.HeaderBorderStyle.Render(strings.Repeat("─", m.width)),
 			headerInner,
+			m.styles.HeaderBorderStyle.Render(strings.Repeat("─", m.width)),
 		)
 
 		// FOOTER - styled with keybinding boxes and color-coded content
@@ -386,8 +403,8 @@ func (m Model) View() string {
 		// Wrap with full-width border
 		footer := lipgloss.JoinVertical(
 			lipgloss.Left,
-			footerInner,
 			m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width)),
+			footerInner,
 		)
 
 		// STEP 2: Calculate content height based on actual header/footer heights

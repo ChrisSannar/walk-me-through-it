@@ -222,11 +222,8 @@ func (h *Highlighter) chromaToLipgloss(tokenType chroma.TokenType, style *chroma
 		s = s.Foreground(lipgloss.Color(color))
 	}
 
-	// Apply background
-	if entry.Background != 0 {
-		bg := entry.Background.String()
-		s = s.Background(lipgloss.Color(bg))
-	}
+	// Note: Background colors are intentionally not applied to keep the code
+	// area transparent and consistent with the terminal background
 
 	// Apply styles
 	if entry.Bold == chroma.Yes {
