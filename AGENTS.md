@@ -70,7 +70,7 @@ testdata/              # Sample walkthrough files
 - **Dimensions**: Use `SetDimensions()` for responsive layouts
 
 ### File Naming
-- Walkthrough files: `wmti_*.json` pattern
+- Walkthrough files: `*.wmti.json` pattern in `.wmti/` directory
 - Internal packages: lowercase, descriptive
 - Test files: `*_test.go`
 
@@ -114,7 +114,7 @@ Walkthrough files are JSON with this structure:
 ## Key Features to Maintain
 
 1. **Cyclic Navigation**: Tab/Shift+Tab cycle through steps infinitely
-2. **File Selection**: List of `wmti_*.json` files with selection
+2. **File Selection**: List of `*.wmti.json` files with selection from `.wmti/` directory
 3. **Syntax Highlighting**: 20+ languages supported via Chroma
 4. **Security**: Path validation, extension allowlisting, audit logging
 5. **Responsive Layout**: Adapts to terminal size changes

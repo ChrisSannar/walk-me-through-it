@@ -320,3 +320,55 @@ func truncateClean(s string, maxWidth int) string {
 ### Build Status
 ✅ Tests passing
 ✅ Build successful
+
+---
+
+## Session 2026-02-08: Changed Walkthrough File Naming Convention
+
+### Changes Made
+
+#### 1. New Naming Convention
+- **Old pattern**: `wmti_*.json` (anywhere in project)
+- **New pattern**: `*.wmti.json` (only in `.wmti/` directory)
+- **Examples**: `auth-flow.wmti.json`, `tutorial.wmti.json`, `self.wmti.json`
+
+#### 2. Auto-Creation of .wmti/ Directory
+**File**: `internal/tui/model.go`
+- When `wmti` runs, it automatically creates `.wmti/` directory if it doesn't exist
+- Creates `self.wmti.json` template file - a self-referential walkthrough that explains the walkthrough format using itself as an example
+- Template includes 3 steps showing: structure, steps array, and step properties
+
+#### 3. Updated Init Command
+**File**: `cmd/init/init.go`
+- Creates `.wmti/` directory
+- Creates `example.wmti.json` with starter template
+- Provides next steps guidance
+
+#### 4. Updated File Discovery
+**File**: `internal/walker/finder.go`
+- Changed search pattern to `.wmti/*.wmti.json`
+- Removed root-level search (clean separation - all walkthroughs in `.wmti/`)
+
+#### 5. Renamed Existing Files
+- `wmti_project_setup.json` → `.wmti/project_setup.wmti.json`
+- `wmti_security_measures.json` → `.wmti/security_measures.wmti.json`
+
+#### 6. Updated Documentation
+- `AGENTS.md` - Updated naming convention references
+- `docs/NOTES.md` - Removed completed task, updated all references
+- `docs/SESSIONS.md` - This entry
+
+### Benefits
+1. **Cleaner project root** - All walkthroughs in hidden `.wmti/` directory
+2. **Clearer file association** - `.wmti.json` extension makes ownership obvious
+3. **Better organization** - Single location for all walkthrough files
+4. **Self-documenting** - `self.wmti.json` teaches users the format
+
+### Migration Path
+Old `wmti_*.json` files in root will no longer be detected. Users should:
+1. Move files to `.wmti/` directory
+2. Rename from `wmti_name.json` to `name.wmti.json`
+
+### Build Status
+✅ Tests passing
+✅ Build successful

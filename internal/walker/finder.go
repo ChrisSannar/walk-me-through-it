@@ -7,23 +7,17 @@ import (
 )
 
 // FindWalkthroughFiles searches for walkthrough JSON files in the given directory
-// It looks in the current directory and .wmti/ subdirectory
+// It looks in the .wmti/ subdirectory for *.wmti.json files
 func FindWalkthroughFiles(rootPath string) ([]string, error) {
 	var files []string
 
-	// Search patterns - only files following wmti_<title>.json naming convention
-	patterns := []string{
-		"wmti_*.json",       // Root level walkthrough files
-		".wmti/wmti_*.json", // .wmti subdirectory
+	// Search pattern - only files following *.wmti.json naming convention in .wmti/ directory
+	pattern := ".wmti/*.wmti.json"
+	matches, err := filepath.Glob(filepath.Join(rootPath, pattern))
+	if err != nil {
+		return nil, fmt.Errorf("error searching for walkthrough files: %w", err)
 	}
-
-	for _, pattern := range patterns {
-		matches, err := filepath.Glob(filepath.Join(rootPath, pattern))
-		if err != nil {
-			return nil, fmt.Errorf("error searching for walkthrough files: %w", err)
-		}
-		files = append(files, matches...)
-	}
+	files = append(files, matches...)
 
 	// Validate that files are valid walkthroughs by checking if they can be parsed
 	var validFiles []string
