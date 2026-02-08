@@ -442,9 +442,9 @@ func (m Model) View() string {
 						tokenWidth := displayWidth(token.Text)
 
 						if tokenWidth > remainingWidth {
-							// Token doesn't fit - truncate it
-							if remainingWidth >= 0 {
-								truncatedText := truncate(token.Text, remainingWidth)
+							// Token doesn't fit - truncate it cleanly (no ellipsis in code view)
+							if remainingWidth > 0 {
+								truncatedText := truncateClean(token.Text, remainingWidth)
 								codeContent.WriteString(token.Style.Render(truncatedText))
 							}
 							break // Stop rendering more tokens
@@ -567,7 +567,7 @@ func padRight(s string, width int) string {
 	return s
 }
 
-// truncate truncates a string to fit within the maximum visual width
+// truncate truncates a string to fit within the maximum visual width (with ellipsis)
 func truncate(s string, maxWidth int) string {
 	if displayWidth(s) <= maxWidth {
 		return s
@@ -585,6 +585,33 @@ func truncate(s string, maxWidth int) string {
 		if width+runeWidth > maxWidth-3 {
 			// Don't have room for this rune, add ellipsis instead
 			return result + "..."
+		}
+
+		result += string(r)
+		width += runeWidth
+	}
+	return result
+}
+
+// truncateClean truncates a string to fit within the maximum visual width (no ellipsis)
+// Used for code display where we want clean truncation at the edge
+func truncateClean(s string, maxWidth int) string {
+	if displayWidth(s) <= maxWidth {
+		return s
+	}
+
+	// Need to truncate without ellipsis
+	result := ""
+	width := 0
+	for _, r := range s {
+		runeWidth := 1
+		if r == '\t' {
+			runeWidth = 4
+		}
+
+		if width+runeWidth > maxWidth {
+			// Don't have room for this rune, stop here
+			return result
 		}
 
 		result += string(r)

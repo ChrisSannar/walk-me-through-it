@@ -4,7 +4,6 @@ Here's the place to put the human readable ideas, potential features, and goals 
 
 ## Next
 
- - Fix the truncation bug (there's still one line that isn't truncating properly)
  - Have the whole code space be the same color
 
 ## Goals
@@ -23,6 +22,7 @@ Here's the place to put the human readable ideas, potential features, and goals 
 
  - A chat box inside the "Content" view that the user can ask about things in the project.
  - Have the option to "Scan" for new `wmti_*.json` files
+ - When starting with the init, auto-detect AI keys in `.bashrc` (or congruent operating system) and then ask to use them
 
 ## Engineering
 

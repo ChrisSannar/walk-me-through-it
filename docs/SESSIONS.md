@@ -282,3 +282,41 @@ internal/
 5. **Theme switching UI**: Add keybindings to cycle through themes at runtime?
 6. **Configuration file**: Persist user's theme preferences?
 7. **Line number styling**: Make line numbers themable (currently hardcoded)?
+
+---
+
+## Session 2026-02-08: Fixed Truncation Bug
+
+### Problem
+The code view had a truncation bug where one line wasn't truncating properly, causing visual overflow and layout issues.
+
+### Root Causes Found
+1. **Line 446**: `if remainingWidth >= 0` should be `if remainingWidth > 0` - when remainingWidth was exactly 0, it still tried to truncate, outputting "..." which caused overflow
+2. **Ellipsis in code view**: The `truncate()` function always adds "..." but in the code display area, we want clean truncation at the edge without ellipsis
+
+### Solution Implemented
+**File**: `internal/tui/model.go`
+
+1. Changed condition at line 446 from `>= 0` to `> 0`
+2. Created new `truncateClean()` function that truncates without adding ellipsis
+3. Updated highlighted code path to use `truncateClean()` for clean edge truncation
+4. Kept `truncate()` with ellipsis for other uses (like sidebar text)
+
+### Code Changes
+```go
+// In highlighted code path (line ~446):
+if remainingWidth > 0 {  // Changed from >= 0
+    truncatedText := truncateClean(token.Text, remainingWidth)  // Changed from truncate
+    codeContent.WriteString(token.Style.Render(truncatedText))
+}
+
+// New function added:
+func truncateClean(s string, maxWidth int) string {
+    // Truncates without adding "..."
+    // Used for code display where we want clean truncation at the edge
+}
+```
+
+### Build Status
+✅ Tests passing
+✅ Build successful
