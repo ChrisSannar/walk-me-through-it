@@ -372,3 +372,105 @@ Old `wmti_*.json` files in root will no longer be detected. Users should:
 ### Build Status
 ✅ Tests passing
 ✅ Build successful
+
+---
+
+## Session 2026-02-28: Model Refactoring, Testing, and Line Highlighting
+
+### What Was Accomplished
+
+#### 1. Refactored model.go into Multiple Files
+Split the 694-line `internal/tui/model.go` into 5 focused files for better maintainability:
+
+- **types.go** - AppState enum, walkthroughItem struct, Model struct, message types
+- **helpers.go** - displayWidth, padRight, truncate, truncateClean utility functions
+- **loaders.go** - NewModel, Init, file loading functions (async content loading)
+- **view.go** - View rendering logic (split-pane layout, code display, sidebar)
+- **model.go** - Update state machine only (message handling)
+
+#### 2. Created Comprehensive Test Suite (76 total tests)
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `internal/navigator/navigator_test.go` | 20 | Navigation logic |
+| `internal/walker/walker_test.go` | 19 | File reading, path security |
+| `pkg/models/walkthrough_test.go` | 8 | Data structures |
+| `internal/highlighter/highlighter_test.go` | 16 | Syntax highlighting |
+| `internal/tui/helpers_test.go` | 13 | Utility functions |
+
+#### 3. Implemented Line Highlighting Feature
+Modified code rendering to visually highlight specific lines from the step's line range:
+
+**Files Modified**: `internal/tui/styles.go`, `internal/tui/view.go`
+- Added `HighlightLineStyle` with background color (`#1e1e2e`)
+- Modified View rendering to apply background highlighting only to lines within `step.LineStart` to `step.LineEnd`
+- Preserves syntax highlighting colors while adding background
+
+#### 4. Added Context Lines and Centering
+Extended functionality to show more code context around highlighted lines:
+
+- Added new fields to `Model` and `fileContentMsg`:
+  - `highlightStart`, `highlightEnd` - The lines to highlight
+  - `displayStart`, `displayEnd` - The range of lines to actually display
+- Modified `loaders.go` to read a wider range of lines to fill available screen space
+- Displayed range is dynamically calculated to center the highlighted section
+
+#### 5. Fixed and Refined Highlighting
+- Added `hasHighlightContent` check to prevent panic from out-of-bounds access
+- Applied background highlighting to full line width using space padding
+- Lightened highlight color from `#2a2a3e` to `#1e1e2e` for better visibility
+
+#### 6. Updated Walkthrough Files
+Shortened step definitions in `.wmti/` files to be more focused (1-16 lines each):
+- `.wmti/model-organization.wmti.json` - Shows the new file structure
+- `.wmti/self.wmti.json` - Self-referential walkthrough
+
+### Files Modified
+
+```
+internal/
+├── tui/
+│   ├── types.go           # NEW - Type definitions
+│   ├── helpers.go         # NEW - Utility functions
+│   ├── loaders.go         # NEW - File loading logic
+│   ├── view.go            # NEW - View rendering
+│   ├── model.go           # MODIFIED - Reduced to Update only
+│   └── styles.go          # MODIFIED - Added HighlightLineStyle
+├── navigator/
+│   └── navigator_test.go  # NEW - 20 tests
+├── walker/
+│   ├── walker_test.go     # NEW - 19 tests
+│   └── finder_test.go     # NEW
+├── highlighter/
+│   └── highlighter_test.go # NEW - 16 tests
+└── pkg/
+    └── models/
+        └── walkthrough_test.go # NEW - 8 tests
+
+internal/tui/
+└── helpers_test.go        # NEW - 13 tests
+
+.wmti/
+├── model-organization.wmti.json
+└── self.wmti.json
+```
+
+### Key Technical Details
+
+**Line Highlighting Logic** (in `view.go`):
+```go
+// Apply background only to highlighted lines
+isHighlightedLine := lineNum >= m.highlightStart && lineNum <= m.highlightEnd
+if isHighlightedLine {
+    lineContent = HighlightLineStyle.Render(lineContent + strings.Repeat(" ", paddingNeeded))
+}
+```
+
+**Centering Calculation** (in `loaders.go`):
+- Reads extra lines above and below the highlight range
+- Centers the highlighted region when it doesn't fill the screen
+- Falls back gracefully when file is smaller than display area
+
+### Build Status
+✅ Tests passing (76 tests)
+✅ Build successful

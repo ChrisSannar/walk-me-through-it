@@ -5,8 +5,8 @@ Here's the place to put the human readable ideas, potential features, and goals 
 ## Next
 
  - Highlighting + show as much text as possible
- - Include a way to delete walkthroughs
- - Review security flaws in code structure as well as potential vulnerabilities
+- Include a way to delete walkthroughs
+- Review security flaws in code structure as well as potential vulnerabilities
  - Consider how the code can be refactored. Ask the AI to build a walkthrough for what we could do, and why we would do it.
  - Fix the screen flickering bug
  - Delicately add more tests before the project gets too big
