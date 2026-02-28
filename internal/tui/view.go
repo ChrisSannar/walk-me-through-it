@@ -152,6 +152,7 @@ func (m Model) View() string {
 					truncatedLine := truncate(line, maxCodeLineWidth)
 					lineContent := fmt.Sprintf("%4d │ %s", lineNum, truncatedLine)
 
+					// Apply highlight background to the line
 					if isHighlighted(lineNum) {
 						codeContent.WriteString(m.styles.HighlightLineStyle.Render(lineContent))
 					} else {
@@ -162,46 +163,67 @@ func (m Model) View() string {
 				codeBlock = m.styles.CodeStyle.Render(codeContent.String())
 			} else {
 				var codeContent strings.Builder
-				for i, line := range m.fileContent {
+				for i := range m.fileContent {
 					if i >= contentHeight {
 						break
 					}
 					lineNum := m.displayStart + i
-					lineNumStr := fmt.Sprintf("%4d │ ", lineNum)
 
+					// Check if we have highlighted content for this line
+					hasHighlightContent := i < len(highlightedLines)
+
+					// If highlighted, keep syntax colors but add a subtle background
+					// by using a lighter background color that lets colors show through
 					if isHighlighted(lineNum) {
+						lineNumStr := fmt.Sprintf("%4d │ ", lineNum)
 						codeContent.WriteString(m.styles.HighlightLineStyle.Render(lineNumStr))
-					} else {
-						codeContent.WriteString(lineNumStr)
-					}
 
-					remainingWidth := maxCodeLineWidth
-
-					if i < len(highlightedLines) {
-						hlLine := highlightedLines[i]
-						for _, token := range hlLine.Tokens {
-							tokenWidth := displayWidth(token.Text)
-
-							if tokenWidth > remainingWidth {
-								if remainingWidth > 0 {
-									truncatedText := truncateClean(token.Text, remainingWidth)
-									codeContent.WriteString(token.Style.Render(truncatedText))
+						remainingWidth := maxCodeLineWidth
+						if hasHighlightContent {
+							for _, token := range highlightedLines[i].Tokens {
+								tokenWidth := displayWidth(token.Text)
+								if tokenWidth > remainingWidth {
+									if remainingWidth > 0 {
+										truncatedText := truncateClean(token.Text, remainingWidth)
+										// Use token's color plus lighter background
+										codeContent.WriteString(token.Style.Background(lipgloss.Color("#2a2a3e")).Render(truncatedText))
+									}
+									break
 								}
-								break
-							}
-
-							codeContent.WriteString(token.Style.Render(token.Text))
-							remainingWidth -= tokenWidth
-
-							if remainingWidth <= 0 {
-								break
+								// Add background to the token's existing style
+								codeContent.WriteString(token.Style.Background(lipgloss.Color("#2a2a3e")).Render(token.Text))
+								remainingWidth -= tokenWidth
+								if remainingWidth <= 0 {
+									break
+								}
 							}
 						}
+						codeContent.WriteString("\n")
 					} else {
-						truncatedLine := truncate(line, remainingWidth)
-						codeContent.WriteString(truncatedLine)
+						// Use syntax highlighting for non-highlighted lines
+						lineNumStr := fmt.Sprintf("%4d │ ", lineNum)
+						codeContent.WriteString(lineNumStr)
+
+						remainingWidth := maxCodeLineWidth
+						if hasHighlightContent {
+							for _, token := range highlightedLines[i].Tokens {
+								tokenWidth := displayWidth(token.Text)
+								if tokenWidth > remainingWidth {
+									if remainingWidth > 0 {
+										truncatedText := truncateClean(token.Text, remainingWidth)
+										codeContent.WriteString(token.Style.Render(truncatedText))
+									}
+									break
+								}
+								codeContent.WriteString(token.Style.Render(token.Text))
+								remainingWidth -= tokenWidth
+								if remainingWidth <= 0 {
+									break
+								}
+							}
+						}
+						codeContent.WriteString("\n")
 					}
-					codeContent.WriteString("\n")
 				}
 				codeBlock = m.styles.CodeStyle.Render(codeContent.String())
 			}
