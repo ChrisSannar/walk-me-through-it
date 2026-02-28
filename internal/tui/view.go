@@ -186,16 +186,20 @@ func (m Model) View() string {
 									if remainingWidth > 0 {
 										truncatedText := truncateClean(token.Text, remainingWidth)
 										// Use token's color plus lighter background
-										codeContent.WriteString(token.Style.Background(lipgloss.Color("#2a2a3e")).Render(truncatedText))
+										codeContent.WriteString(token.Style.Background(lipgloss.Color("#4a4a5e")).Render(truncatedText))
 									}
 									break
 								}
 								// Add background to the token's existing style
-								codeContent.WriteString(token.Style.Background(lipgloss.Color("#2a2a3e")).Render(token.Text))
+								codeContent.WriteString(token.Style.Background(lipgloss.Color("#4a4a5e")).Render(token.Text))
 								remainingWidth -= tokenWidth
 								if remainingWidth <= 0 {
 									break
 								}
+							}
+							// Fill remaining width with highlight background
+							if remainingWidth > 0 {
+								codeContent.WriteString(lipgloss.NewStyle().Background(lipgloss.Color("#4a4a5e")).Render(strings.Repeat(" ", remainingWidth)))
 							}
 						}
 						codeContent.WriteString("\n")

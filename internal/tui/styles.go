@@ -214,7 +214,7 @@ func (s *Styles) applyTheme() {
 
 	// Code highlight - light background to highlight the relevant lines
 	s.HighlightLineStyle = lipgloss.NewStyle().
-		Background(lipgloss.Color("#2a2a3e"))
+		Background(lipgloss.Color("#4a4a5e"))
 }
 
 // RenderKeybinding creates a styled keybinding like [Tab] Next
