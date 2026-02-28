@@ -99,6 +99,9 @@ type Styles struct {
 	StepHeaderStyle      lipgloss.Style
 	StepTitleStyle       lipgloss.Style
 	StepDescriptionStyle lipgloss.Style
+
+	// Code highlight style
+	HighlightLineStyle lipgloss.Style
 }
 
 // NewStyles creates a new Styles instance with default theme
@@ -208,6 +211,10 @@ func (s *Styles) applyTheme() {
 
 	s.StepDescriptionStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(colors.TextSidebar))
+
+	// Code highlight - light background to highlight the relevant lines
+	s.HighlightLineStyle = lipgloss.NewStyle().
+		Background(lipgloss.Color("#2a2a3e"))
 }
 
 // RenderKeybinding creates a styled keybinding like [Tab] Next

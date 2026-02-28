@@ -138,11 +138,49 @@ func (m Model) loadCurrentStepFile() tea.Cmd {
 			return errMsg{err}
 		}
 
-		lines, err := m.walker.ReadFileLines(step.File, step.LineStart, step.LineEnd)
+		highlightStart := step.LineStart
+		highlightEnd := step.LineEnd
+		highlightLines := highlightEnd - highlightStart + 1
+
+		// Calculate how many lines to read to fill the screen
+		// Account for header (~3 lines) and footer (~3 lines)
+		targetLines := m.height - 10
+		if targetLines < 10 {
+			targetLines = 20 // minimum
+		}
+
+		// Expand range to center the highlight
+		displayStart := highlightStart
+		displayEnd := highlightEnd
+
+		if targetLines > highlightLines {
+			extra := targetLines - highlightLines
+			before := extra / 2
+			after := extra - before
+
+			displayStart = highlightStart - before
+			displayEnd = highlightEnd + after
+
+			// Don't go below line 1
+			if displayStart < 1 {
+				displayStart = 1
+				// If we can't go back, show more after
+				after = (highlightEnd - displayStart + 1) + extra - highlightLines
+				displayEnd = highlightEnd + after
+			}
+		}
+
+		lines, err := m.walker.ReadFileLines(step.File, displayStart, displayEnd)
 		if err != nil {
 			return errMsg{fmt.Errorf("failed to read file %s: %w", step.File, err)}
 		}
 
-		return fileContentMsg{lines}
+		return fileContentMsg{
+			lines:          lines,
+			highlightStart: highlightStart,
+			highlightEnd:   highlightEnd,
+			displayStart:   displayStart,
+			displayEnd:     displayEnd,
+		}
 	}
 }

@@ -45,6 +45,12 @@ type Model struct {
 	err          error
 	styles       *Styles
 	highlighter  *highlighter.Highlighter
+
+	// Line ranges for display
+	highlightStart int
+	highlightEnd   int
+	displayStart   int
+	displayEnd     int
 }
 
 // Messages
@@ -61,5 +67,9 @@ type walkthroughLoadedMsg struct {
 }
 
 type fileContentMsg struct {
-	lines []string
+	lines          []string
+	highlightStart int
+	highlightEnd   int
+	displayStart   int
+	displayEnd     int
 }

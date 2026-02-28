@@ -135,48 +135,71 @@ func (m Model) View() string {
 			maxCodeLineWidth = 1
 		}
 
+		isHighlighted := func(lineNum int) bool {
+			return lineNum >= m.highlightStart && lineNum <= m.highlightEnd
+		}
+
 		var codeBlock string
 		if len(m.fileContent) > 0 {
-			highlightedLines, err := m.highlighter.HighlightFile(step.File, m.fileContent, step.LineStart)
+			highlightedLines, err := m.highlighter.HighlightFile(step.File, m.fileContent, m.displayStart)
 			if err != nil || len(highlightedLines) == 0 {
 				var codeContent strings.Builder
 				for i, line := range m.fileContent {
 					if i >= contentHeight {
 						break
 					}
-					lineNum := step.LineStart + i
+					lineNum := m.displayStart + i
 					truncatedLine := truncate(line, maxCodeLineWidth)
-					codeContent.WriteString(fmt.Sprintf("%4d │ %s\n", lineNum, truncatedLine))
+					lineContent := fmt.Sprintf("%4d │ %s", lineNum, truncatedLine)
+
+					if isHighlighted(lineNum) {
+						codeContent.WriteString(m.styles.HighlightLineStyle.Render(lineContent))
+					} else {
+						codeContent.WriteString(lineContent)
+					}
+					codeContent.WriteString("\n")
 				}
 				codeBlock = m.styles.CodeStyle.Render(codeContent.String())
 			} else {
 				var codeContent strings.Builder
-				for i, hlLine := range highlightedLines {
+				for i, line := range m.fileContent {
 					if i >= contentHeight {
 						break
 					}
-					lineNumStr := fmt.Sprintf("%4d │ ", hlLine.LineNumber)
-					codeContent.WriteString(lineNumStr)
+					lineNum := m.displayStart + i
+					lineNumStr := fmt.Sprintf("%4d │ ", lineNum)
+
+					if isHighlighted(lineNum) {
+						codeContent.WriteString(m.styles.HighlightLineStyle.Render(lineNumStr))
+					} else {
+						codeContent.WriteString(lineNumStr)
+					}
 
 					remainingWidth := maxCodeLineWidth
 
-					for _, token := range hlLine.Tokens {
-						tokenWidth := displayWidth(token.Text)
+					if i < len(highlightedLines) {
+						hlLine := highlightedLines[i]
+						for _, token := range hlLine.Tokens {
+							tokenWidth := displayWidth(token.Text)
 
-						if tokenWidth > remainingWidth {
-							if remainingWidth > 0 {
-								truncatedText := truncateClean(token.Text, remainingWidth)
-								codeContent.WriteString(token.Style.Render(truncatedText))
+							if tokenWidth > remainingWidth {
+								if remainingWidth > 0 {
+									truncatedText := truncateClean(token.Text, remainingWidth)
+									codeContent.WriteString(token.Style.Render(truncatedText))
+								}
+								break
 							}
-							break
-						}
 
-						codeContent.WriteString(token.Style.Render(token.Text))
-						remainingWidth -= tokenWidth
+							codeContent.WriteString(token.Style.Render(token.Text))
+							remainingWidth -= tokenWidth
 
-						if remainingWidth <= 0 {
-							break
+							if remainingWidth <= 0 {
+								break
+							}
 						}
+					} else {
+						truncatedLine := truncate(line, remainingWidth)
+						codeContent.WriteString(truncatedLine)
 					}
 					codeContent.WriteString("\n")
 				}

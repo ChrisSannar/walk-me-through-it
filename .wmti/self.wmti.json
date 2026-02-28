@@ -1,33 +1,42 @@
 {
   "title": "Understanding Walkthrough Files",
-  "description": "A walkthrough that explains the structure of .wmti.json files using this file as an example",
-  "version": "1.0.0",
+  "description": "A walkthrough that explains the structure of .wmti.json files. Note: Only lines within the step's line_start to line_end range get highlighted with a light background.",
+  "version": "4.0.0",
   "steps": [
     {
       "id": 1,
-      "title": "Walkthrough Structure",
-      "description": "Every .wmti.json file starts with metadata: title, description, and version. The title appears in the file selection list.",
+      "title": "JSON Structure",
+      "description": "Every walkthrough starts with metadata: title, description, and version. Only the opening brace and title field are highlighted here (line 2).",
       "file": ".wmti/self.wmti.json",
-      "line_start": 1,
-      "line_end": 5,
+      "line_start": 2,
+      "line_end": 2,
       "action": "read"
     },
     {
       "id": 2,
       "title": "Steps Array",
-      "description": "The 'steps' array contains all navigation points. Each step has an ID, title, description, file path, and line range.",
+      "description": "The 'steps' array contains navigation points. This step highlights just the 'steps' key (line 5) to show where steps begin.",
       "file": ".wmti/self.wmti.json",
-      "line_start": 6,
-      "line_end": 18,
+      "line_start": 5,
+      "line_end": 5,
       "action": "read"
     },
     {
       "id": 3,
-      "title": "Step Properties",
-      "description": "Each step specifies which file to open and which lines to highlight. The 'action' field determines what to do (currently only 'read' is supported).",
+      "title": "Single Step Definition",
+      "description": "Each step needs: id, title, description, file, line_start, line_end, action. This step shows a minimal 2-line step definition (lines 7-8).",
       "file": ".wmti/self.wmti.json",
-      "line_start": 10,
-      "line_end": 17,
+      "line_start": 7,
+      "line_end": 8,
+      "action": "read"
+    },
+    {
+      "id": 4,
+      "title": "Line Range Usage",
+      "description": "The line_start and line_end fields determine which lines get highlighted. Lines within this range get a light background in the view; other lines show as context.",
+      "file": ".wmti/self.wmti.json",
+      "line_start": 12,
+      "line_end": 13,
       "action": "read"
     }
   ]

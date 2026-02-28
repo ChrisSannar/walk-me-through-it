@@ -125,6 +125,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case fileContentMsg:
 		m.fileContent = msg.lines
+		m.highlightStart = msg.highlightStart
+		m.highlightEnd = msg.highlightEnd
+		m.displayStart = msg.displayStart
+		m.displayEnd = msg.displayEnd
 		m.lastAuditMsg = m.walker.GetLastAuditMessage()
 		m.state = StateViewing
 		return m, nil
