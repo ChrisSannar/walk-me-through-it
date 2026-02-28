@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -25,6 +26,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					m.state = StateSelecting
 				}
+				return m, nil
+			}
+			if m.state == StateConfirmDelete {
+				m.deleteConfirmPath = ""
+				m.state = StateSelecting
 				return m, nil
 			}
 			return m, tea.Quit
@@ -66,6 +72,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+			// Handle delete key
+			if msg.String() == "d" || msg.String() == "Del" {
+				if item, ok := m.list.SelectedItem().(walkthroughItem); ok {
+					m.deleteConfirmPath = item.path
+					m.state = StateConfirmDelete
+					return m, nil
+				}
+			}
+
+			// Handle cancel for delete confirmation
+			if msg.String() == "q" || msg.String() == "Esc" {
+				if m.deleteConfirmPath != "" {
+					m.deleteConfirmPath = ""
+					m.state = StateSelecting
+					return m, nil
+				}
+			}
+
 			// Handle looping navigation
 			switch msg.String() {
 			case "down", "j":
@@ -97,6 +121,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			m.textInput, cmd = m.textInput.Update(msg)
 			return m, cmd
+
+		case StateConfirmDelete:
+			if msg.String() == "enter" {
+				if m.deleteConfirmPath != "" {
+					err := os.Remove(m.deleteConfirmPath)
+					if err != nil {
+						m.err = err
+						m.deleteConfirmPath = ""
+						m.state = StateSelecting
+						return m, nil
+					}
+					// Remove item from list directly instead of rescanning
+					// (rescanning would recreate self.wmti.json template)
+					var remainingItems []list.Item
+					for _, item := range m.list.Items() {
+						if wti, ok := item.(walkthroughItem); ok {
+							if wti.path != m.deleteConfirmPath {
+								remainingItems = append(remainingItems, item)
+							}
+						}
+					}
+					m.list.SetItems(remainingItems)
+					m.deleteConfirmPath = ""
+					if len(remainingItems) == 0 {
+						m.state = StateEnteringPath
+					} else {
+						m.state = StateSelecting
+					}
+					return m, nil
+				}
+			}
+			if msg.String() == "q" || msg.String() == "Esc" {
+				m.deleteConfirmPath = ""
+				m.state = StateSelecting
+				return m, nil
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -116,6 +176,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.list.SetItems(items)
 		if len(items) == 0 {
 			m.state = StateEnteringPath
+		} else {
+			m.state = StateSelecting
 		}
 		return m, nil
 

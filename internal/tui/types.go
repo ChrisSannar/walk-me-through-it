@@ -17,6 +17,7 @@ const (
 	StateLoading
 	StateViewing
 	StateLoadingStep
+	StateConfirmDelete
 )
 
 // walkthroughItem represents a walkthrough file for the list
@@ -45,6 +46,9 @@ type Model struct {
 	err          error
 	styles       *Styles
 	highlighter  *highlighter.Highlighter
+
+	// Delete confirmation
+	deleteConfirmPath string
 
 	// Line ranges for display
 	highlightStart int

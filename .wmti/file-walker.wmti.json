@@ -1,0 +1,34 @@
+{
+  "title": "File Walker Security",
+  "description": "Understanding how the walker ensures secure file access with allowlist and size limits.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Security Constants",
+      "description": "The walker package defines a 10MB max file size limit to prevent reading excessively large files into memory.",
+      "file": "internal/walker/walker.go",
+      "line_start": 11,
+      "line_end": 14,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Allowed Extensions",
+      "description": "Only specific file extensions are allowed for security. This prevent reading sensitive files like .env, .ssh keys, or system files.",
+      "file": "internal/walker/walker.go",
+      "line_start": 17,
+      "line_end": 26,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Walker Structure",
+      "description": "The Walker struct holds the root path for file operations and tracks the last audit message for logging.",
+      "file": "internal/walker/walker.go",
+      "line_start": 28,
+      "line_end": 32,
+      "action": "read"
+    }
+  ]
+}

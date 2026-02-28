@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -45,6 +46,13 @@ func (m Model) View() string {
 			return m.renderCentered(fmt.Sprintf("Error: %v", err))
 		}
 		return m.renderCentered(fmt.Sprintf("Loading step...\n\n📄 %s\n📝 %s", step.Title, step.Description))
+
+	case StateConfirmDelete:
+		filename := filepath.Base(m.deleteConfirmPath)
+		return m.renderCentered(fmt.Sprintf(
+			"⚠️  Are you sure you want to delete %s?\n\nPress Enter to confirm or q/Esc to cancel",
+			filename,
+		))
 
 	case StateViewing:
 		if m.navigator == nil {

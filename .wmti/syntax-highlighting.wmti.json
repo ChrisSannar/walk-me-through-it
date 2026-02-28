@@ -1,0 +1,34 @@
+{
+  "title": "Syntax Highlighting",
+  "description": "How the highlighter uses Chroma to provide syntax highlighting with theme support.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Available Themes",
+      "description": "Multiple Chroma themes are supported including Monokai, Dracula, GitHub, OneDark, Solarized, and Vim.",
+      "file": "internal/highlighter/highlighter.go",
+      "line_start": 20,
+      "line_end": 27,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Highlighter Structure",
+      "description": "The Highlighter uses a thread-safe cache to store previously highlighted lines, improving performance.",
+      "file": "internal/highlighter/highlighter.go",
+      "line_start": 29,
+      "line_end": 35,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Token Representation",
+      "description": "Each highlighted line contains tokens with the original text and a lipgloss Style for rendering.",
+      "file": "internal/highlighter/highlighter.go",
+      "line_start": 37,
+      "line_end": 47,
+      "action": "read"
+    }
+  ]
+}
