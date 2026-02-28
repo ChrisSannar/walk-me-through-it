@@ -131,6 +131,9 @@ func (m Model) View() string {
 
 		linePrefixWidth := 7
 		maxCodeLineWidth := codeWidth - linePrefixWidth - 1
+		if maxCodeLineWidth < 1 {
+			maxCodeLineWidth = 1
+		}
 
 		var codeBlock string
 		if len(m.fileContent) > 0 {
