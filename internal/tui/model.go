@@ -38,7 +38,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err == nil {
 					m.state = StateLoadingStep
 					m.fileContent = []string{}
-					return m, tea.Batch(tea.ClearScreen, m.loadCurrentStepFile())
+					m.lastAuditMsg = ""
+					return m, m.loadCurrentStepFile()
 				}
 			}
 			return m, nil
@@ -48,7 +49,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err == nil {
 					m.state = StateLoadingStep
 					m.fileContent = []string{}
-					return m, tea.Batch(tea.ClearScreen, m.loadCurrentStepFile())
+					m.lastAuditMsg = ""
+					return m, m.loadCurrentStepFile()
 				}
 			}
 			return m, nil

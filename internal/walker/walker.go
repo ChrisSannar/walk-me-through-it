@@ -3,7 +3,6 @@ package walker
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,7 +62,6 @@ func (w *Walker) ReadFileLines(filePath string, start, end int) ([]string, error
 
 	// Log access for audit
 	w.lastAuditMessage = fmt.Sprintf("[AUDIT] Reading file: %s (lines %d-%d, size: %d bytes)", safePath, start, end, fileInfo.Size())
-	log.Println(w.lastAuditMessage)
 
 	// Open file with explicit read-only flag
 	file, err := os.OpenFile(safePath, os.O_RDONLY, 0)
