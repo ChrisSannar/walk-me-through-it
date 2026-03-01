@@ -46,17 +46,44 @@ func runInit() error {
 	samplePath := filepath.Join(wmtiDir, "example.wmti.json")
 	if _, err := os.Stat(samplePath); os.IsNotExist(err) {
 		sample := `{
-  "title": "Example Walkthrough",
-  "description": "A template walkthrough to get you started",
+  "title": "How wmti Works",
+  "description": "A quick tour of how wmti walks you through codebases",
   "version": "1.0.0",
   "steps": [
     {
       "id": 1,
-      "title": "First Step",
-      "description": "Description of what this step explains",
-      "file": "path/to/file.go",
-      "line_start": 1,
-      "line_end": 10,
+      "title": "JSON Walkthrough Files",
+      "description": "wmti creates and reads these JSON files to walk through your project. Each file describes a walkthrough with a title, description, and a series of steps.",
+      "file": ".wmti/example.wmti.json",
+      "line_start": 2,
+      "line_end": 4,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Each Step Defines a View",
+      "description": "Each 'step' in the steps array tells wmti which file to display, which lines to show, and what description to display in the sidebar.",
+      "file": ".wmti/example.wmti.json",
+      "line_start": 18,
+      "line_end": 18,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Cyclic Navigation",
+      "description": "When you reach the last step, pressing Tab will loop back to the first step. Similarly, Shift+Tab cycles backwards.",
+      "file": ".wmti/example.wmti.json",
+      "line_start": 25,
+      "line_end": 31,
+      "action": "read"
+    },
+    {
+      "id": 4,
+      "title": "Creating Walkthroughs",
+      "description": "You can create new walkthroughs by simply adding a JSON file to the .wmti/ folder. Each file must follow the *.wmti.json naming convention.",
+      "file": ".wmti/example.wmti.json",
+      "line_start": 0,
+      "line_end": 0,
       "action": "read"
     }
   ]

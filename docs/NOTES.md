@@ -6,6 +6,7 @@ Here's the place to put the human readable ideas, potential features, and goals 
 
   - Add the ability to AI generate more walkthroughs
   - Review security flaws in code structure as well as potential vulnerabilities
+  - Add json validation. If the file is corrupted (bad line numbers, unparsable, etc.) Don't delete the file, just add an error next to it in the selection screen (contents still there, just no access)
   - Consider how the code can be refactored. Ask the AI to build a walkthrough for what we could do, and why we would do it.
   - Delicately add more tests before the project gets too big
   - Layered walkthroughs?

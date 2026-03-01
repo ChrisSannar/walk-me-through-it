@@ -55,6 +55,9 @@ func (m Model) View() string {
 		))
 
 	case StateViewing:
+		if m.err != nil {
+			return m.renderCentered(fmt.Sprintf("Error: %s\n\nPress Tab to try next step, or q to quit", m.err.Error()))
+		}
 		if m.navigator == nil {
 			return m.renderCentered("Error: Navigator not initialized")
 		}

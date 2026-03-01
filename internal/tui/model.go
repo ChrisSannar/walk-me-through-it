@@ -199,6 +199,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		m.err = msg.err
+		// If we were loading a step, go back to viewing state to show the error
+		if m.state == StateLoadingStep {
+			m.state = StateViewing
+		}
 		return m, nil
 	}
 

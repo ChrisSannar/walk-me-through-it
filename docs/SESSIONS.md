@@ -271,8 +271,51 @@ internal/
 
 ### Build Status
 ✅ Tests passing
-✅ Linting clean
 ✅ Build successful
+
+---
+
+## Session 2026-03-01: Fixed Broken Example Bug and Updated Example Walkthrough
+
+### What Was Done
+
+#### 1. Fixed the Broken Example Walkthrough Bug
+The `example.wmti.json` was pointing to a non-existent file (`path/to/file.go`), causing the TUI to get stuck on "Loading step..." when navigating between steps.
+
+**Root Cause**: When loading a step's file fails (file doesn't exist), the app remained stuck in `StateLoadingStep` state with no way to recover.
+
+**Fixes Implemented**:
+
+- **Fixed in `internal/tui/model.go`**: Added logic to revert state from `StateLoadingStep` back to `StateViewing` when an error occurs during file loading
+- **Fixed in `internal/tui/view.go`**: Added error display when in `StateViewing` state so users can see what went wrong
+- **Fixed `example.wmti.json`**: Updated to reference an actual existing file (`internal/tui/types.go`)
+
+#### 2. Updated the Example Walkthrough as a Meta Tutorial
+Changed `example.wmti.json` to be a 4-step self-referential tour explaining how wmti works:
+
+1. **"JSON Walkthrough Files"** - Shows itself explaining JSON structure
+2. **"Each Step Defines a View"** - Shows the steps array within the JSON
+3. **"Cyclic Navigation"** - Shows the Tab/Shift+Tab navigation code in `model.go`
+4. **"Creating Walkthroughs"** - Shows `navigation.wmti.json` as another example
+
+#### 3. Updated the Init Template
+Updated `cmd/init/init.go` to generate the same new 4-step example when users run `wmti init`
+
+### Files Modified
+
+- `internal/tui/model.go` - Bug fix for stuck loading state
+- `internal/tui/view.go` - Added error message display
+- `.wmti/example.wmti.json` - Updated content
+- `cmd/init/init.go` - Updated template content
+
+### Build Status
+✅ Tests passing
+✅ Build successful
+
+### What's Next
+The user mentioned they want to add a "create a walkthrough" option. Before proceeding with that feature, we should:
+- Build and test the app to verify the fixes work
+- Then discuss the design for the "create walkthrough" feature (CLI command, interactive wizard, AI-assisted, etc.)
 
 ### Open Questions to Address Next Session
 1. **Audit message positioning**: Footer layout may need adjustment based on terminal width
