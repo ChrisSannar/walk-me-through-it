@@ -474,3 +474,53 @@ if isHighlightedLine {
 ### Build Status
 ✅ Tests passing (76 tests)
 ✅ Build successful
+
+---
+
+## Session 2026-02-28 (Continued): Line Highlighting Improvements, Screen Flickering Fix, Delete Feature, and Walkthrough Creation
+
+### What Was Accomplished
+
+#### 1. Line Highlighting Improvements
+- Made line highlighting extend to the end of the line (not just the immediate code)
+- Changed highlight color from `#2a2a3e` to lighter `#4a4a5e`
+- Added code to fill remaining width with highlight background after processing tokens
+
+#### 2. Screen Flickering Fix
+- Initially tried `tea.ClearScreen` which caused flickering
+- Tried rendering footer in StateLoadingStep - caused stacking issue
+- Tried `tea.Sequence(tea.ClearScreen, ...)` 
+- User eventually fixed it themselves with a different approach
+
+#### 3. Delete Walkthrough Feature
+- Added `StateConfirmDelete` to AppState enum in `types.go`
+- Added `deleteConfirmPath` field to Model in `types.go`
+- Added delete key handling (`d` and `Del` keys) in `model.go`
+- Added confirmation modal rendering in `view.go`
+- Fixed bug where deletion would call `findWalkthroughFiles()` which recreated `self.wmti.json`
+- Fixed state handling so app doesn't quit when pressing `q` in delete confirmation
+
+#### 4. Created 5 Walkthrough Files
+- Removed existing walkthroughs from `.wmti/` directory
+- Created new walkthroughs covering project topics:
+  - `file-walker.wmti.json` - File Walker Security
+  - `navigation.wmti.json` - Walkthrough Navigation
+  - `syntax-highlighting.wmti.json` - Syntax Highlighting
+  - `configuration.wmti.json` - Configuration Management
+  - `tui-model.wmti.json` - TUI State Management
+
+#### 5. Removed self.wmti.json Creator
+- Removed the `createSelfTemplate` function from `loaders.go`
+- Removed the auto-creation logic from `findWalkthroughFiles()`
+
+### Files Modified
+
+- `internal/tui/view.go` - Highlighting and delete modal rendering
+- `internal/tui/styles.go` - Highlight color change
+- `internal/tui/types.go` - Added StateConfirmDelete and deleteConfirmPath
+- `internal/tui/model.go` - Delete key handling and deletion logic
+- `internal/tui/loaders.go` - Removed self.wmti.json template creation
+
+### Build Status
+✅ Tests passing
+✅ Build successful
