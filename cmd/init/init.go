@@ -15,12 +15,12 @@ func NewInitCommand() *cobra.Command {
 		Short: "Initialize wmti configuration",
 		Long:  `Sets up initial configuration including .wmti/ directory and optional API key storage.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInit()
+			return RunInit()
 		},
 	}
 }
 
-func runInit() error {
+func RunInit() error {
 	fmt.Println("Initializing wmti configuration...")
 
 	// Load or create config
