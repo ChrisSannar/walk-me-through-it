@@ -19,14 +19,44 @@ func (m Model) View() string {
 		if len(m.list.Items()) == 0 {
 			return m.renderCentered("Searching for walkthrough files...\n\nPress Tab to enter a path manually, or q to quit")
 		}
+
 		listView := m.list.View()
-		lines := strings.Split(listView, "\n")
-		var result strings.Builder
-		result.WriteString(listView)
-		for i := len(lines); i < m.height; i++ {
-			result.WriteString("\n")
+
+		pageInfo := ""
+		if m.list.Paginator.TotalPages > 1 {
+			pageInfo = fmt.Sprintf("Page %d of %d  |  ", m.list.Paginator.Page+1, m.list.Paginator.TotalPages)
 		}
-		return result.String()
+
+		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
+		footerContent := lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			m.styles.StepDescriptionStyle.Render(pageInfo),
+			m.styles.RenderKeybinding("↑↓", "select"),
+			" ",
+			m.styles.RenderKeybinding("Enter", "open"),
+			" ",
+			m.styles.RenderKeybinding("d", "delete"),
+			" ",
+			m.styles.RenderKeybinding("q", "quit"),
+			" ",
+			m.styles.RenderKeybinding("m", "model"),
+		)
+		footerInner := m.styles.FooterStyle.Render(footerContent)
+		footer := lipgloss.JoinVertical(
+			lipgloss.Left,
+			footerBorder,
+			footerInner,
+		)
+
+		listLines := strings.Split(listView, "\n")
+		var content strings.Builder
+		content.WriteString(listView)
+		for i := len(listLines); i < m.height-lipgloss.Height(footer); i++ {
+			content.WriteString("\n")
+		}
+		content.WriteString(footer)
+
+		return content.String()
 
 	case StateEnteringPath:
 		return m.renderCentered(fmt.Sprintf(
@@ -53,6 +83,9 @@ func (m Model) View() string {
 			"⚠️  Are you sure you want to delete %s?\n\nPress Enter to confirm or q/Esc to cancel",
 			filename,
 		))
+
+	case StateModelSelect:
+		return m.renderCentered("Model Selection Page\n\n[DUMMY TEXT] This is the model selection page.\n\nPress Enter to continue to walkthroughs...")
 
 	case StateViewing:
 		if m.err != nil {

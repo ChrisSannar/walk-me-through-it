@@ -22,19 +22,22 @@ func NewModel() Model {
 	l := list.New(listItems, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Select a walkthrough file"
 	l.SetShowStatusBar(false)
+	l.SetShowPagination(false)
+	l.SetShowHelp(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().
 		MarginLeft(2).
 		Foreground(lipgloss.Color("#FFFDF5")).
 		Background(lipgloss.Color("#25A065")).
 		Padding(0, 1)
+	l.Styles.StatusBar = lipgloss.NewStyle().Foreground(lipgloss.Color("transparent"))
 
 	ti := textinput.New()
 	ti.Placeholder = "Enter path to walkthrough file..."
 	ti.Focus()
 
 	return Model{
-		state:       StateSelecting,
+		state:       StateModelSelect,
 		rootPath:    cwd,
 		list:        l,
 		textInput:   ti,

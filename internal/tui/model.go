@@ -65,6 +65,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle state-specific key events
 		switch m.state {
 		case StateSelecting:
+			// 'm' key to open model selection
+			if msg.String() == "m" {
+				m.state = StateModelSelect
+				return m, nil
+			}
+
 			if msg.String() == "enter" {
 				if item, ok := m.list.SelectedItem().(walkthroughItem); ok {
 					m.selectedFile = item.path
@@ -154,6 +160,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if msg.String() == "q" || msg.String() == "Esc" {
 				m.deleteConfirmPath = ""
+				m.state = StateSelecting
+				return m, nil
+			}
+
+		case StateModelSelect:
+			if msg.String() == "enter" {
 				m.state = StateSelecting
 				return m, nil
 			}

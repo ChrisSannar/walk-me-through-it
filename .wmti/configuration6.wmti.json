@@ -1,0 +1,34 @@
+{
+  "title": "Configuration Management",
+  "description": "How the app uses Viper for configuration with automatic file creation.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Config Structure",
+      "description": "The Config struct holds the API key and paths to the config directory and file.",
+      "file": "internal/config/config.go",
+      "line_start": 11,
+      "line_end": 16,
+      "action": "read"
+    },
+    {
+      "id": 2,
+      "title": "Config Directory",
+      "description": "Configuration is stored in ~/.config/wmti/ following XDG base directory specification.",
+      "file": "internal/config/config.go",
+      "line_start": 22,
+      "line_end": 29,
+      "action": "read"
+    },
+    {
+      "id": 3,
+      "title": "Viper Setup",
+      "description": "Viper handles config loading with defaults, automatic YAML parsing, and writes new config if missing.",
+      "file": "internal/config/config.go",
+      "line_start": 36,
+      "line_end": 50,
+      "action": "read"
+    }
+  ]
+}

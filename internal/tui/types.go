@@ -18,6 +18,7 @@ const (
 	StateViewing
 	StateLoadingStep
 	StateConfirmDelete
+	StateModelSelect
 )
 
 // walkthroughItem represents a walkthrough file for the list
@@ -46,6 +47,9 @@ type Model struct {
 	err          error
 	styles       *Styles
 	highlighter  *highlighter.Highlighter
+
+	// Model selection
+	selectedModel string
 
 	// Delete confirmation
 	deleteConfirmPath string
