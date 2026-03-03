@@ -54,6 +54,9 @@ type Model struct {
 	modelSelectedIndex int
 	modelTextInput     textinput.Model
 	modelIsAdding      bool
+	modelAddingName    string
+	modelAskingFor     string // "name" or "key"
+	modelDeleteConfirm bool
 
 	// Delete confirmation
 	deleteConfirmPath string

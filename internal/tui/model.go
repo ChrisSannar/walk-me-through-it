@@ -16,6 +16,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "q":
+			if m.state == StateModelSelect && m.modelIsAdding {
+				// Type 'q' into the input field
+				currentValue := m.modelTextInput.Value()
+				m.modelTextInput.SetValue(currentValue + "q")
+				return m, nil
+			}
 			if m.state == StateViewing {
 				// Go back to file selection without rescanning
 				m.navigator = nil
@@ -31,6 +37,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == StateConfirmDelete {
 				m.deleteConfirmPath = ""
 				m.state = StateSelecting
+				return m, nil
+			}
+			if m.state == StateModelSelect && m.modelIsAdding {
+				m.modelTextInput.Reset()
+				m.modelTextInput.Placeholder = "Enter model name..."
+				m.modelIsAdding = false
+				m.modelAddingName = ""
+				m.modelAskingFor = ""
 				return m, nil
 			}
 			return m, tea.Quit
@@ -167,23 +181,37 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case StateModelSelect:
 			if m.modelIsAdding {
 				if msg.String() == "enter" {
-					newKey := m.modelTextInput.Value()
-					if newKey != "" {
-						m.modelList = append(m.modelList[:len(m.modelList)-1], newKey, "+ Add new model")
-						m.modelSelectedIndex = len(m.modelList) - 2
-						cfg, err := loadConfig()
-						if err == nil {
-							cfg.Models = append(cfg.Models, newKey)
-							cfg.Save()
+					value := m.modelTextInput.Value()
+					if value != "" {
+						if m.modelAskingFor == "name" {
+							m.modelAddingName = value
+							m.modelAskingFor = "key"
+							m.modelTextInput.Reset()
+							m.modelTextInput.Placeholder = "Enter API key..."
+						} else {
+							// Saving the model name only (key would be stored separately later)
+							m.modelList = append(m.modelList[:len(m.modelList)-1], m.modelAddingName, "+ Add new model")
+							m.modelSelectedIndex = len(m.modelList) - 2
+							cfg, err := loadConfig()
+							if err == nil {
+								cfg.Models = append(cfg.Models, m.modelAddingName)
+								cfg.Save()
+							}
+							m.modelAddingName = ""
+							m.modelAskingFor = ""
+							m.modelTextInput.Reset()
+							m.modelTextInput.Placeholder = "Enter model name..."
+							m.modelIsAdding = false
 						}
 					}
-					m.modelTextInput.Reset()
-					m.modelIsAdding = false
 					return m, nil
 				}
-				if msg.String() == "Esc" || msg.String() == "q" {
+				if msg.String() == "Esc" {
 					m.modelTextInput.Reset()
+					m.modelTextInput.Placeholder = "Enter model name..."
 					m.modelIsAdding = false
+					m.modelAddingName = ""
+					m.modelAskingFor = ""
 					return m, nil
 				}
 				var cmd tea.Cmd
@@ -195,23 +223,58 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				if m.modelSelectedIndex == len(m.modelList)-1 {
 					m.modelIsAdding = true
+					m.modelAskingFor = "name"
+					m.modelTextInput.Placeholder = "Enter model name..."
+				} else if m.modelDeleteConfirm {
+					// Confirm delete
+					modelToDelete := m.modelList[m.modelSelectedIndex]
+					m.modelList = append(m.modelList[:m.modelSelectedIndex], m.modelList[m.modelSelectedIndex+1:]...)
+					// Update config
+					cfg, err := loadConfig()
+					if err == nil {
+						var newModels []string
+						for _, m := range cfg.Models {
+							if m != modelToDelete {
+								newModels = append(newModels, m)
+							}
+						}
+						cfg.Models = newModels
+						cfg.Save()
+					}
+					m.modelDeleteConfirm = false
 				} else {
 					m.selectedModel = m.modelList[m.modelSelectedIndex]
 					m.state = StateSelecting
 				}
 				return m, nil
+			case "d":
+				if m.modelSelectedIndex < len(m.modelList)-1 {
+					m.modelDeleteConfirm = true
+				}
+				return m, nil
 			case "q":
+				if m.modelDeleteConfirm {
+					m.modelDeleteConfirm = false
+					return m, nil
+				}
 				return m, tea.Quit
 			case "up", "k":
+				m.modelDeleteConfirm = false
 				if m.modelSelectedIndex > 0 {
 					m.modelSelectedIndex--
 				}
 				return m, nil
 			case "down", "j":
+				m.modelDeleteConfirm = false
 				if m.modelSelectedIndex < len(m.modelList)-1 {
 					m.modelSelectedIndex++
 				}
 				return m, nil
+			case "Esc":
+				if m.modelDeleteConfirm {
+					m.modelDeleteConfirm = false
+					return m, nil
+				}
 			}
 		}
 

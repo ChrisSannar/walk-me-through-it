@@ -92,14 +92,16 @@ func (m Model) View() string {
 		content.WriteString("\n\n")
 
 		for i, model := range m.modelList {
+			name := model
 			if i == m.modelSelectedIndex {
-				arrow := m.styles.StepHeaderStyle.Render("▶")
-				item := m.styles.StepTitleStyle.Render(model)
-				content.WriteString(arrow)
-				content.WriteString(" ")
-				content.WriteString(item)
+				highlightStyle := lipgloss.NewStyle().
+					Foreground(lipgloss.Color("#85DCFF")).
+					Background(lipgloss.Color("#2D2D3D")).
+					Padding(0, 1)
+				content.WriteString(highlightStyle.Render(" " + name + " "))
 			} else {
-				item := m.styles.StepDescriptionStyle.Render(" " + model)
+				item := m.styles.StepDescriptionStyle.Render(name)
+				content.WriteString(" ")
 				content.WriteString(item)
 			}
 			content.WriteString("\n")
@@ -107,7 +109,11 @@ func (m Model) View() string {
 
 		if m.modelIsAdding {
 			content.WriteString("\n")
-			content.WriteString(m.styles.StepDescriptionStyle.Render("Enter API key:"))
+			prompt := "Enter model name:"
+			if m.modelAskingFor == "key" {
+				prompt = "Enter API key:"
+			}
+			content.WriteString(m.styles.StepDescriptionStyle.Render(prompt))
 			content.WriteString("\n")
 			content.WriteString(m.modelTextInput.View())
 		}
@@ -129,12 +135,32 @@ func (m Model) View() string {
 				footerInner,
 			)
 			content.WriteString(footer)
+		} else if m.modelDeleteConfirm {
+			modelName := m.modelList[m.modelSelectedIndex]
+			confirmText := m.styles.StepDescriptionStyle.Render("Delete " + modelName + "?")
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("Enter", "confirm"),
+				" ",
+				m.styles.RenderKeybinding("Esc", "cancel"),
+			)
+			footerInner := m.styles.FooterStyle.Render(confirmText)
+			footerInner2 := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+				footerInner2,
+			)
+			content.WriteString(footer)
 		} else {
 			footerContent := lipgloss.JoinHorizontal(
 				lipgloss.Center,
 				m.styles.RenderKeybinding("↑↓", "select"),
 				" ",
 				m.styles.RenderKeybinding("Enter", "confirm"),
+				" ",
+				m.styles.RenderKeybinding("d", "delete"),
 				" ",
 				m.styles.RenderKeybinding("q", "quit"),
 			)
