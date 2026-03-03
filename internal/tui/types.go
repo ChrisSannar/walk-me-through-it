@@ -49,7 +49,11 @@ type Model struct {
 	highlighter  *highlighter.Highlighter
 
 	// Model selection
-	selectedModel string
+	selectedModel      string
+	modelList          []string
+	modelSelectedIndex int
+	modelTextInput     textinput.Model
+	modelIsAdding      bool
 
 	// Delete confirmation
 	deleteConfirmPath string

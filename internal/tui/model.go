@@ -165,8 +165,52 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case StateModelSelect:
-			if msg.String() == "enter" {
-				m.state = StateSelecting
+			if m.modelIsAdding {
+				if msg.String() == "enter" {
+					newKey := m.modelTextInput.Value()
+					if newKey != "" {
+						m.modelList = append(m.modelList[:len(m.modelList)-1], newKey, "+ Add new model")
+						m.modelSelectedIndex = len(m.modelList) - 2
+						cfg, err := loadConfig()
+						if err == nil {
+							cfg.Models = append(cfg.Models, newKey)
+							cfg.Save()
+						}
+					}
+					m.modelTextInput.Reset()
+					m.modelIsAdding = false
+					return m, nil
+				}
+				if msg.String() == "Esc" || msg.String() == "q" {
+					m.modelTextInput.Reset()
+					m.modelIsAdding = false
+					return m, nil
+				}
+				var cmd tea.Cmd
+				m.modelTextInput, cmd = m.modelTextInput.Update(msg)
+				return m, cmd
+			}
+
+			switch msg.String() {
+			case "enter":
+				if m.modelSelectedIndex == len(m.modelList)-1 {
+					m.modelIsAdding = true
+				} else {
+					m.selectedModel = m.modelList[m.modelSelectedIndex]
+					m.state = StateSelecting
+				}
+				return m, nil
+			case "q":
+				return m, tea.Quit
+			case "up", "k":
+				if m.modelSelectedIndex > 0 {
+					m.modelSelectedIndex--
+				}
+				return m, nil
+			case "down", "j":
+				if m.modelSelectedIndex < len(m.modelList)-1 {
+					m.modelSelectedIndex++
+				}
 				return m, nil
 			}
 		}

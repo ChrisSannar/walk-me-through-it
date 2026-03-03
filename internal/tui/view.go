@@ -85,7 +85,76 @@ func (m Model) View() string {
 		))
 
 	case StateModelSelect:
-		return m.renderCentered("Model Selection Page\n\n[DUMMY TEXT] This is the model selection page.\n\nPress Enter to continue to walkthroughs...")
+		var content strings.Builder
+
+		title := m.styles.HeaderFileStyle.Render("Select Model")
+		content.WriteString(title)
+		content.WriteString("\n\n")
+
+		for i, model := range m.modelList {
+			if i == m.modelSelectedIndex {
+				arrow := m.styles.StepHeaderStyle.Render("▶")
+				item := m.styles.StepTitleStyle.Render(model)
+				content.WriteString(arrow)
+				content.WriteString(" ")
+				content.WriteString(item)
+			} else {
+				item := m.styles.StepDescriptionStyle.Render(" " + model)
+				content.WriteString(item)
+			}
+			content.WriteString("\n")
+		}
+
+		if m.modelIsAdding {
+			content.WriteString("\n")
+			content.WriteString(m.styles.StepDescriptionStyle.Render("Enter API key:"))
+			content.WriteString("\n")
+			content.WriteString(m.modelTextInput.View())
+		}
+
+		content.WriteString("\n\n")
+
+		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
+		if m.modelIsAdding {
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("Enter", "save"),
+				" ",
+				m.styles.RenderKeybinding("Esc", "cancel"),
+			)
+			footerInner := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+			)
+			content.WriteString(footer)
+		} else {
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("↑↓", "select"),
+				" ",
+				m.styles.RenderKeybinding("Enter", "confirm"),
+				" ",
+				m.styles.RenderKeybinding("q", "quit"),
+			)
+			footerInner := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+			)
+			content.WriteString(footer)
+		}
+
+		listLines := strings.Split(content.String(), "\n")
+		var result strings.Builder
+		for i := len(listLines); i < m.height; i++ {
+			result.WriteString("\n")
+		}
+		result.WriteString(content.String())
+
+		return result.String()
 
 	case StateViewing:
 		if m.err != nil {

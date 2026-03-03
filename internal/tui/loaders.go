@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/chrissannar/walk-me-through-it/internal/config"
 	"github.com/chrissannar/walk-me-through-it/internal/highlighter"
 	"github.com/chrissannar/walk-me-through-it/internal/navigator"
 	"github.com/chrissannar/walk-me-through-it/internal/walker"
@@ -36,15 +37,38 @@ func NewModel() Model {
 	ti.Placeholder = "Enter path to walkthrough file..."
 	ti.Focus()
 
-	return Model{
-		state:       StateModelSelect,
-		rootPath:    cwd,
-		list:        l,
-		textInput:   ti,
-		walker:      walker.NewWalker(cwd),
-		styles:      NewStyles(),
-		highlighter: highlighter.NewHighlighter(highlighter.ThemeDracula),
+	modelTi := textinput.New()
+	modelTi.Placeholder = "Enter API key..."
+	modelTi.Focus()
+
+	cfg, _ := loadConfig()
+	models := cfg.Models
+	if len(models) == 0 {
+		models = []string{
+			"gpt-4o",
+			"claude-3-5-sonnet",
+			"gemini-2.0-flash",
+		}
 	}
+	models = append(models, "+ Add new model")
+
+	return Model{
+		state:              StateModelSelect,
+		rootPath:           cwd,
+		list:               l,
+		textInput:          ti,
+		walker:             walker.NewWalker(cwd),
+		styles:             NewStyles(),
+		highlighter:        highlighter.NewHighlighter(highlighter.ThemeDracula),
+		modelList:          models,
+		modelSelectedIndex: 0,
+		modelTextInput:     modelTi,
+		modelIsAdding:      false,
+	}
+}
+
+func loadConfig() (*config.Config, error) {
+	return config.LoadOrCreate()
 }
 
 // Init initializes the TUI model
