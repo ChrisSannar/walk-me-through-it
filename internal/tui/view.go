@@ -28,6 +28,36 @@ func (m Model) View() string {
 		}
 
 		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
+
+		if m.deleteConfirmPath != "" {
+			filename := filepath.Base(m.deleteConfirmPath)
+			confirmText := m.styles.StepDescriptionStyle.Render("Delete " + filename + "?")
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("y", "yes"),
+				" ",
+				m.styles.RenderKeybinding("n", "no"),
+			)
+			footerInner := m.styles.FooterStyle.Render(confirmText)
+			footerInner2 := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+				footerInner2,
+			)
+
+			listLines := strings.Split(listView, "\n")
+			var content strings.Builder
+			content.WriteString(listView)
+			for i := len(listLines); i < m.height-lipgloss.Height(footer); i++ {
+				content.WriteString("\n")
+			}
+			content.WriteString(footer)
+
+			return content.String()
+		}
+
 		footerContent := lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			m.styles.StepDescriptionStyle.Render(pageInfo),
@@ -78,10 +108,9 @@ func (m Model) View() string {
 		return m.renderCentered(fmt.Sprintf("Loading step...\n\n📄 %s\n📝 %s", step.Title, step.Description))
 
 	case StateConfirmDelete:
-		filename := filepath.Base(m.deleteConfirmPath)
 		return m.renderCentered(fmt.Sprintf(
-			"⚠️  Are you sure you want to delete %s?\n\nPress Enter to confirm or q/Esc to cancel",
-			filename,
+			"Deleting %s...",
+			filepath.Base(m.deleteConfirmPath),
 		))
 
 	case StateModelSelect:
@@ -162,7 +191,7 @@ func (m Model) View() string {
 				" ",
 				m.styles.RenderKeybinding("d", "delete"),
 				" ",
-				m.styles.RenderKeybinding("q", "quit"),
+				m.styles.RenderKeybinding("q", "back"),
 			)
 			footerInner := m.styles.FooterStyle.Render(footerContent)
 			footer := lipgloss.JoinVertical(

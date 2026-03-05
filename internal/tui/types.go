@@ -60,6 +60,7 @@ type Model struct {
 
 	// Delete confirmation
 	deleteConfirmPath string
+	deleteConfirmFor  string // "model" or "walkthrough"
 
 	// Line ranges for display
 	highlightStart int

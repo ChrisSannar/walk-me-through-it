@@ -567,3 +567,81 @@ if isHighlightedLine {
 ### Build Status
 ✅ Tests passing
 ✅ Build successful
+
+---
+
+## Session 2026-03-03: Auto-Init, Model Selection UI, Footer Improvements, and Delete Confirmation Refactor
+
+### What Was Accomplished
+
+#### 1. Auto-Init for `wmti` Command
+**Files**: `cmd/wmti/root.go`, `cmd/init/init.go`, `internal/config/config.go`
+
+- Modified `cmd/wmti/root.go` to automatically run init if not initialized
+- Added `isInitialized()` function that checks for `.wmti.json` files in `.wmti/` directory
+- Exported `RunInit()` in `cmd/init/init.go` to be called from root.go
+- Updated `internal/config/config.go` to include `Models` and `Selected` fields for future model management
+
+#### 2. Model Selection Page (New TUI State)
+**Files**: `internal/tui/types.go`, `internal/tui/view.go`, `internal/tui/model.go`, `internal/tui/loaders.go`
+
+- Added `StateModelSelect` to `AppState` enum in `types.go`
+- Added model-related fields to Model struct:
+  - `modelList` - slice of available models
+  - `modelSelectedIndex` - current selection
+  - `modelTextInput` - for new model name input
+  - `modelIsAdding` - flag for adding mode
+  - `modelAddingName` - storing model name during two-step input
+  - `modelAskingFor` - tracks "name" or "api_key" input phase
+  - `modelDeleteConfirm` - delete confirmation state
+- Created menu view in `view.go` with:
+  - Highlighted selection (cyan on dark gray background)
+  - Green arrow replaced with highlight
+  - "Add new model" option at bottom
+  - Two-step input: first model name, then API key
+- Added key handling in `model.go`:
+  - Arrow keys (↑↓ or j/k) for navigation
+  - Enter to confirm selection or add new model
+  - 'q' types into input field, only 'Esc' cancels
+  - 'd' to delete model with confirmation in footer
+
+#### 3. Walkthrough Selection Footer Improvements
+**File**: `internal/tui/view.go`
+
+- Replaced Bubble Tea's built-in status bar with custom footer
+- Added pagination info ("Page X of Y") to footer
+- Added 'd' delete and 'm' model selection options to footer
+- Made footer colors lighter/more visible
+
+#### 4. Delete Confirmation Refactor
+**Files**: `internal/tui/types.go`, `internal/tui/view.go`, `internal/tui/model.go`
+
+- Unified delete confirmation to use footer instead of centered message
+- Shows "Delete <filename>?" in footer with "Enter confirm" and "Esc cancel"
+- Works for both walkthrough files and model deletion
+
+### Files Modified
+
+```
+cmd/
+├── wmti/root.go           # Auto-init logic
+└── init/init.go           # Exported RunInit()
+
+internal/
+├── config/config.go      # Added Models and Selected fields
+└── tui/
+    ├── types.go           # Added StateModelSelect, model fields
+    ├── view.go            # Model selection view, updated footer
+    ├── model.go           # Key handling for model selection
+    └── loaders.go         # Model list initialization with dummy data
+```
+
+### Next Steps
+
+- Actually storing API keys locally (user mentioned "eventually want to store the API keys on a local root folder")
+- Building LLM integration to generate walkthroughs
+- Other model management features
+
+### Build Status
+✅ Tests passing
+✅ Build successful
