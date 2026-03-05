@@ -182,6 +182,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "enter" {
 				path := m.textInput.Value()
 				if path != "" {
+					if _, err := m.walker.SanitizePath(path); err != nil {
+						m.err = fmt.Errorf("invalid path: %w", err)
+						return m, nil
+					}
 					m.selectedFile = path
 					return m, m.loadWalkthrough(path)
 				}

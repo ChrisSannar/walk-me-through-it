@@ -10,8 +10,8 @@ func TestWalkthrough_Validate_Valid(t *testing.T) {
 		Description: "A test walkthrough",
 		Version:     "1.0.0",
 		Steps: []Step{
-			{ID: 1, Title: "Step 1", File: "main.go"},
-			{ID: 2, Title: "Step 2", File: "utils.go"},
+			{ID: 1, Title: "Step 1", File: "main.go", LineStart: 1, LineEnd: 10},
+			{ID: 2, Title: "Step 2", File: "utils.go", LineStart: 1, LineEnd: 20},
 		},
 	}
 
@@ -87,8 +87,8 @@ func TestStep_Validate_InvalidID(t *testing.T) {
 		Description: "A test walkthrough",
 		Version:     "1.0.0",
 		Steps: []Step{
-			{ID: 1, Title: "Step 1", File: "main.go"},
-			{ID: 3, Title: "Step 2", File: "utils.go"}, // Missing ID 2
+			{ID: 1, Title: "Step 1", File: "main.go", LineStart: 1, LineEnd: 10},
+			{ID: 3, Title: "Step 2", File: "utils.go", LineStart: 1, LineEnd: 20}, // Missing ID 2
 		},
 	}
 
@@ -109,8 +109,8 @@ func TestStep_Validate_InvalidID_NotStartingAt1(t *testing.T) {
 		Description: "A test walkthrough",
 		Version:     "1.0.0",
 		Steps: []Step{
-			{ID: 0, Title: "Step 1", File: "main.go"}, // Not starting at 1
-			{ID: 2, Title: "Step 2", File: "utils.go"},
+			{ID: 0, Title: "Step 1", File: "main.go", LineStart: 1, LineEnd: 10}, // Not starting at 1
+			{ID: 2, Title: "Step 2", File: "utils.go", LineStart: 1, LineEnd: 20},
 		},
 	}
 
@@ -131,7 +131,7 @@ func TestStep_Validate_MissingFile(t *testing.T) {
 		Description: "A test walkthrough",
 		Version:     "1.0.0",
 		Steps: []Step{
-			{ID: 1, Title: "Step 1", File: ""}, // Empty file
+			{ID: 1, Title: "Step 1", File: "", LineStart: 1, LineEnd: 10}, // Empty file
 		},
 	}
 
@@ -152,7 +152,7 @@ func TestStep_Validate_WhitespaceFile(t *testing.T) {
 		Description: "A test walkthrough",
 		Version:     "1.0.0",
 		Steps: []Step{
-			{ID: 1, Title: "Step 1", File: "   "}, // Whitespace file
+			{ID: 1, Title: "Step 1", File: "   ", LineStart: 1, LineEnd: 10}, // Whitespace file
 		},
 	}
 

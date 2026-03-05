@@ -645,3 +645,92 @@ internal/
 ### Build Status
 ✅ Tests passing
 ✅ Build successful
+
+---
+
+## Session 2026-03-05: API Key Storage, UI Improvements, and Security Fixes
+
+### What Was Accomplished
+
+#### 1. API Key Storage Investigation and Fix
+**Issue**: API keys were stored in plaintext in `~/.config/wmti/config.yaml` but weren't actually being saved when entered in the TUI.
+
+**Investigation**: Found that opencode stores API keys in `~/.local/share/opencode/auth.json` (also plaintext).
+
+**Solution**: Implemented opencode-style auth storage:
+- Created `internal/config/auth.go` - new auth package storing keys in `~/.local/share/wmti/auth.json`
+- Removed API key field from main config (`internal/config/config.go`)
+- Fixed bug in `internal/tui/model.go` to actually save API keys when entered
+- Also deletes API key from storage when model is deleted
+
+#### 2. UI Improvements
+**Files**: `internal/tui/model.go`, `internal/tui/view.go`, `internal/tui/styles.go`
+
+- Changed model delete confirmation from Enter key to 'y'/'n' keys (consistent with walkthrough deletion)
+- Added duplicate model name validation with error display
+- Added `ErrorTextStyle` in `internal/tui/styles.go` (red color)
+- Added `modelError` field to Model struct for tracking/displaying errors
+
+#### 3. Security Fixes
+**Files**: `internal/walker/walker.go`, `internal/navigator/navigator.go`, `pkg/models/walkthrough.go`
+
+Fixed 4 security vulnerabilities:
+
+1. **Manual path entry not sanitized** - Fixed by validating paths in `StateEnteringPath` state
+2. **Walkthrough file references could escape root** - Fixed by validating each step's path in navigator
+3. **No line range validation** - Fixed by adding `LineStart > 0` and `LineEnd >= LineStart` checks
+4. **No input length limits** - Fixed by adding `CharLimit` to text inputs (512 for paths, 64 for model names)
+
+### Files Modified
+
+```
+cmd/wmti/root.go                     # Auto-init logic
+cmd/init/init.go                      # Exported RunInit()
+
+internal/
+├── config/
+│   ├── auth.go                      # NEW - Auth storage (~/.local/share/wmti/auth.json)
+│   └── config.go                    # Removed API key, added Models/Selected
+
+internal/
+├── tui/
+│   ├── types.go                     # Added modelError field
+│   ├── view.go                      # Error display, y/n delete confirmation
+│   ├── model.go                     # API key saving, duplicate validation
+│   ├── loaders.go                   # Model list initialization
+│   └── styles.go                    # Added ErrorTextStyle
+
+internal/
+├── walker/
+│   ├── walker.go                    # Path sanitization
+│   └── walker_test.go               # Updated tests
+
+internal/
+├── navigator/
+│   └── navigator.go                 # Step path validation
+
+pkg/
+└── models/
+    ├── walkthrough.go               # Line range validation
+    ├── errors.go                    # Error types
+    └── walkthrough_test.go          # Updated tests
+```
+
+### Current State
+
+All tests pass, build succeeds. The application now has:
+- Separate auth storage for API keys (matching opencode's approach)
+- y/n confirmation for model deletion
+- Duplicate model name prevention with error display
+- Security hardening against path traversal and DoS attacks
+
+### Potential Next Steps
+
+- Add environment variable support for API keys (e.g., `WMTI_API_KEY`)
+- Implement actual API integration for the `internal/api` package
+- Add keychain support for extra security
+- Consider encrypting the auth.json file
+
+### Build Status
+✅ Tests passing
+✅ Build successful

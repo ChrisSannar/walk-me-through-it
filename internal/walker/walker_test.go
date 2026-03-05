@@ -159,10 +159,10 @@ func TestReadFileLines_DisallowedExtension(t *testing.T) {
 func TestSanitizePath_Valid(t *testing.T) {
 	w := NewWalker("/project")
 
-	path, err := w.sanitizePath("src/main.go")
+	path, err := w.SanitizePath("src/main.go")
 
 	if err != nil {
-		t.Fatalf("sanitizePath failed: %v", err)
+		t.Fatalf("SanitizePath failed: %v", err)
 	}
 
 	if path == "" {
@@ -173,7 +173,7 @@ func TestSanitizePath_Valid(t *testing.T) {
 func TestSanitizePath_EscapesRoot(t *testing.T) {
 	w := NewWalker("/project")
 
-	_, err := w.sanitizePath("../../../etc/passwd")
+	_, err := w.SanitizePath("../../../etc/passwd")
 
 	if err == nil {
 		t.Fatal("expected error for path escaping root")
@@ -185,7 +185,7 @@ func TestSanitizePath_DoubleDot(t *testing.T) {
 
 	// Note: filepath.Clean resolves ../ components, so this becomes /etc/passwd
 	// The function should catch this as it escapes the root
-	_, err := w.sanitizePath("src/../etc/passwd")
+	_, err := w.SanitizePath("src/../etc/passwd")
 
 	// This should fail because after cleaning it becomes /project/etc/passwd
 	// which is still within /project/ but the test expectation may differ

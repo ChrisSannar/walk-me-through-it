@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/chrissannar/walk-me-through-it/pkg/models"
 )
@@ -12,6 +14,7 @@ import (
 type Navigator struct {
 	walkthrough *models.Walkthrough
 	currentStep int
+	rootPath    string
 }
 
 // NewNavigator creates a new navigator instance
@@ -21,11 +24,23 @@ func NewNavigator() *Navigator {
 	}
 }
 
+func NewNavigatorWithRoot(rootPath string) *Navigator {
+	return &Navigator{
+		currentStep: 0,
+		rootPath:    rootPath,
+	}
+}
+
 // LoadWalkthrough loads a walkthrough from a JSON file
 func (n *Navigator) LoadWalkthrough(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read walkthrough file: %w", err)
+	}
+
+	// Set rootPath from walkthrough file location if not set
+	if n.rootPath == "" {
+		n.rootPath = filepath.Dir(path)
 	}
 
 	var wt models.Walkthrough
@@ -37,8 +52,37 @@ func (n *Navigator) LoadWalkthrough(path string) error {
 		return fmt.Errorf("invalid walkthrough: %w", err)
 	}
 
+	// Validate all step file paths are within root
+	for _, step := range wt.Steps {
+		if err := n.validateStepFilePath(step.File); err != nil {
+			return fmt.Errorf("invalid step %d: %w", step.ID, err)
+		}
+	}
+
 	n.walkthrough = &wt
 	n.currentStep = 0
+	return nil
+}
+
+func (n *Navigator) validateStepFilePath(filePath string) error {
+	cleanPath := filepath.Clean(filePath)
+	fullPath := filepath.Join(n.rootPath, cleanPath)
+
+	resolvedPath, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		resolvedPath = fullPath
+	}
+
+	rootWithSep := n.rootPath
+	if !strings.HasSuffix(rootWithSep, string(filepath.Separator)) {
+		rootWithSep += string(filepath.Separator)
+	}
+
+	if !strings.HasPrefix(resolvedPath+string(filepath.Separator), rootWithSep) &&
+		resolvedPath != n.rootPath {
+		return fmt.Errorf("path escapes root: %s", filePath)
+	}
+
 	return nil
 }
 

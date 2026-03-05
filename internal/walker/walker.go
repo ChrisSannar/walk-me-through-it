@@ -41,7 +41,7 @@ func NewWalker(rootPath string) *Walker {
 // ReadFileLines reads a specific range of lines from a file
 func (w *Walker) ReadFileLines(filePath string, start, end int) ([]string, error) {
 	// Validate and sanitize path
-	safePath, err := w.sanitizePath(filePath)
+	safePath, err := w.SanitizePath(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("invalid file path: %w", err)
 	}
@@ -93,7 +93,7 @@ func (w *Walker) ReadFileLines(filePath string, start, end int) ([]string, error
 
 // FileExists checks if a file exists
 func (w *Walker) FileExists(filePath string) bool {
-	safePath, err := w.sanitizePath(filePath)
+	safePath, err := w.SanitizePath(filePath)
 	if err != nil {
 		return false
 	}
@@ -101,8 +101,8 @@ func (w *Walker) FileExists(filePath string) bool {
 	return !os.IsNotExist(err)
 }
 
-// sanitizePath prevents directory traversal attacks
-func (w *Walker) sanitizePath(filePath string) (string, error) {
+// SanitizePath prevents directory traversal attacks
+func (w *Walker) SanitizePath(filePath string) (string, error) {
 	// Clean the path to resolve any . or .. components
 	cleanPath := filepath.Clean(filePath)
 

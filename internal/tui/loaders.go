@@ -35,10 +35,12 @@ func NewModel() Model {
 
 	ti := textinput.New()
 	ti.Placeholder = "Enter path to walkthrough file..."
+	ti.CharLimit = 512
 	ti.Focus()
 
 	modelTi := textinput.New()
-	modelTi.Placeholder = "Enter API key..."
+	modelTi.Placeholder = "Enter model name..."
+	modelTi.CharLimit = 64
 	modelTi.Focus()
 
 	cfg, _ := loadConfig()
@@ -98,7 +100,7 @@ func (m Model) findWalkthroughFiles() tea.Cmd {
 // loadWalkthrough loads a walkthrough file
 func (m Model) loadWalkthrough(path string) tea.Cmd {
 	return func() tea.Msg {
-		nav := navigator.NewNavigator()
+		nav := navigator.NewNavigatorWithRoot(m.rootPath)
 		if err := nav.LoadWalkthrough(path); err != nil {
 			return errMsg{err}
 		}

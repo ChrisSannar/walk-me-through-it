@@ -34,6 +34,9 @@ func (w *Walkthrough) Validate() error {
 		if step.File == "" {
 			return ErrMissingFile
 		}
+		if step.LineStart <= 0 || step.LineEnd < step.LineStart {
+			return ErrInvalidLineNum
+		}
 	}
 	return nil
 }
