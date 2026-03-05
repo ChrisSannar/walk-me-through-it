@@ -1,11 +1,13 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/chrissannar/walk-me-through-it/internal/config"
 )
 
 // Update handles messages and updates the model
@@ -194,12 +196,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					value := m.modelTextInput.Value()
 					if value != "" {
 						if m.modelAskingFor == "name" {
+							for _, existing := range m.modelList {
+								if existing == value {
+									m.modelError = fmt.Sprintf("model %q already exists", value)
+									return m, nil
+								}
+							}
+							m.modelError = ""
 							m.modelAddingName = value
 							m.modelAskingFor = "key"
 							m.modelTextInput.Reset()
 							m.modelTextInput.Placeholder = "Enter API key..."
 						} else {
-							// Saving the model name only (key would be stored separately later)
+							apiKey := value
+							modelName := m.modelAddingName
+							if err := config.SetAPIKey(modelName, apiKey); err != nil {
+								m.err = err
+							}
 							m.modelList = append(m.modelList[:len(m.modelList)-1], m.modelAddingName, "+ Add new model")
 							m.modelSelectedIndex = len(m.modelList) - 2
 							cfg, err := loadConfig()
@@ -222,6 +235,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.modelIsAdding = false
 					m.modelAddingName = ""
 					m.modelAskingFor = ""
+					m.modelError = ""
 					return m, nil
 				}
 				var cmd tea.Cmd
@@ -234,12 +248,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.modelSelectedIndex == len(m.modelList)-1 {
 					m.modelIsAdding = true
 					m.modelAskingFor = "name"
+					m.modelError = ""
 					m.modelTextInput.Placeholder = "Enter model name..."
-				} else if m.modelDeleteConfirm {
-					// Confirm delete
+				} else {
+					m.selectedModel = m.modelList[m.modelSelectedIndex]
+					m.state = StateSelecting
+				}
+				return m, nil
+			case "d":
+				if m.modelSelectedIndex < len(m.modelList)-1 {
+					m.modelDeleteConfirm = true
+				}
+				return m, nil
+			case "y":
+				if m.modelDeleteConfirm {
 					modelToDelete := m.modelList[m.modelSelectedIndex]
 					m.modelList = append(m.modelList[:m.modelSelectedIndex], m.modelList[m.modelSelectedIndex+1:]...)
-					// Update config
 					cfg, err := loadConfig()
 					if err == nil {
 						var newModels []string
@@ -251,15 +275,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						cfg.Models = newModels
 						cfg.Save()
 					}
+					if err := config.DeleteAPIKey(modelToDelete); err != nil {
+						m.err = err
+					}
 					m.modelDeleteConfirm = false
-				} else {
-					m.selectedModel = m.modelList[m.modelSelectedIndex]
-					m.state = StateSelecting
 				}
 				return m, nil
-			case "d":
-				if m.modelSelectedIndex < len(m.modelList)-1 {
-					m.modelDeleteConfirm = true
+			case "n":
+				if m.modelDeleteConfirm {
+					m.modelDeleteConfirm = false
 				}
 				return m, nil
 			case "q":

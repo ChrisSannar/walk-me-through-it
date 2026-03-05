@@ -145,6 +145,10 @@ func (m Model) View() string {
 			content.WriteString(m.styles.StepDescriptionStyle.Render(prompt))
 			content.WriteString("\n")
 			content.WriteString(m.modelTextInput.View())
+			if m.modelError != "" {
+				content.WriteString("\n")
+				content.WriteString(m.styles.ErrorTextStyle.Render(m.modelError))
+			}
 		}
 
 		content.WriteString("\n\n")
@@ -169,9 +173,9 @@ func (m Model) View() string {
 			confirmText := m.styles.StepDescriptionStyle.Render("Delete " + modelName + "?")
 			footerContent := lipgloss.JoinHorizontal(
 				lipgloss.Center,
-				m.styles.RenderKeybinding("Enter", "confirm"),
+				m.styles.RenderKeybinding("y", "yes"),
 				" ",
-				m.styles.RenderKeybinding("Esc", "cancel"),
+				m.styles.RenderKeybinding("n", "no"),
 			)
 			footerInner := m.styles.FooterStyle.Render(confirmText)
 			footerInner2 := m.styles.FooterStyle.Render(footerContent)

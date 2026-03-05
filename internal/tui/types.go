@@ -57,6 +57,7 @@ type Model struct {
 	modelAddingName    string
 	modelAskingFor     string // "name" or "key"
 	modelDeleteConfirm bool
+	modelError         string
 
 	// Delete confirmation
 	deleteConfirmPath string

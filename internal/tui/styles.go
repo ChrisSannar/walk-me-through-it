@@ -99,6 +99,7 @@ type Styles struct {
 	StepHeaderStyle      lipgloss.Style
 	StepTitleStyle       lipgloss.Style
 	StepDescriptionStyle lipgloss.Style
+	ErrorTextStyle       lipgloss.Style
 
 	// Code highlight style
 	HighlightLineStyle lipgloss.Style
@@ -211,6 +212,9 @@ func (s *Styles) applyTheme() {
 
 	s.StepDescriptionStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(colors.TextSidebar))
+
+	s.ErrorTextStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#ff6b6b"))
 
 	// Code highlight - light background to highlight the relevant lines
 	s.HighlightLineStyle = lipgloss.NewStyle().

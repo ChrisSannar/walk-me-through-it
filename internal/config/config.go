@@ -10,7 +10,6 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	APIKey     string   `mapstructure:"api_key"`
 	Models     []string `mapstructure:"models"`
 	Selected   string   `mapstructure:"selected"`
 	ConfigDir  string
@@ -41,7 +40,6 @@ func LoadOrCreate() (*Config, error) {
 	viper.AddConfigPath(cfg.ConfigDir)
 
 	// Set defaults
-	viper.SetDefault("api_key", "")
 	viper.SetDefault("models", []string{})
 	viper.SetDefault("selected", "")
 
@@ -71,7 +69,6 @@ func (c *Config) ConfigPath() string {
 
 // Save saves the current configuration
 func (c *Config) Save() error {
-	viper.Set("api_key", c.APIKey)
 	viper.Set("models", c.Models)
 	viper.Set("selected", c.Selected)
 	return viper.WriteConfig()
