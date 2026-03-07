@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/chrissannar/walk-me-through-it/internal/api"
 	"github.com/chrissannar/walk-me-through-it/internal/config"
 )
 
@@ -24,7 +25,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.modelTextInput.SetValue(currentValue + "q")
 				return m, nil
 			}
+			if m.state == StateProviderSelect && m.providerAskingFor == "key" {
+				// Type 'q' into the API key input
+				currentValue := m.modelTextInput.Value()
+				m.modelTextInput.SetValue(currentValue + "q")
+				return m, nil
+			}
 			if m.state == StateModelSelect {
+				// Go back to provider selection
+				m.state = StateProviderSelect
+				return m, nil
+			}
+			if m.state == StateProviderSelect {
 				// Go back to walkthrough selection
 				m.state = StateSelecting
 				return m, nil
@@ -81,9 +93,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle state-specific key events
 		switch m.state {
 		case StateSelecting:
-			// 'm' key to open model selection
+			// 'm' key to open provider selection
 			if msg.String() == "m" {
-				m.state = StateModelSelect
+				m.state = StateProviderSelect
+				m.providerSelectedIndex = 0
 				return m, nil
 			}
 
@@ -194,6 +207,71 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput, cmd = m.textInput.Update(msg)
 			return m, cmd
 
+		case StateProviderSelect:
+			if m.providerAskingFor == "key" {
+				if msg.String() == "enter" {
+					value := m.modelTextInput.Value()
+					if value != "" {
+						providerID := m.selectedProvider
+						if err := config.SetAPIKey(providerID, value, providerID); err != nil {
+							m.err = err
+						}
+						m.providerAskingFor = ""
+						m.state = StateModelSelect
+						m.modelSelectedIndex = 0
+						m.updateModelListForProvider(providerID)
+					}
+					return m, nil
+				}
+				if msg.String() == "Esc" {
+					m.providerAskingFor = ""
+					m.modelTextInput.Reset()
+					m.modelTextInput.Placeholder = "Enter API key..."
+					return m, nil
+				}
+				var cmd tea.Cmd
+				m.modelTextInput, cmd = m.modelTextInput.Update(msg)
+				return m, cmd
+			}
+
+			switch msg.String() {
+			case "enter":
+				selectedProviderName := m.providerList[m.providerSelectedIndex]
+				m.selectedProvider = ""
+				for _, p := range api.Providers {
+					if p.DisplayName == selectedProviderName {
+						m.selectedProvider = p.ID
+						break
+					}
+				}
+				if m.selectedProvider != "" {
+					entry, err := config.GetAPIKeyEntry(m.selectedProvider)
+					if err == nil && entry.APIKey != "" {
+						m.state = StateModelSelect
+						m.modelSelectedIndex = 0
+						m.updateModelListForProvider(m.selectedProvider)
+					} else {
+						m.providerAskingFor = "key"
+						m.modelTextInput.Reset()
+						m.modelTextInput.Placeholder = "Enter API key for " + selectedProviderName + "..."
+					}
+				}
+				return m, nil
+			case "up", "k":
+				if m.providerSelectedIndex > 0 {
+					m.providerSelectedIndex--
+				}
+				return m, nil
+			case "down", "j":
+				if m.providerSelectedIndex < len(m.providerList)-1 {
+					m.providerSelectedIndex++
+				}
+				return m, nil
+			case "Esc":
+				m.state = StateSelecting
+				return m, nil
+			}
+
 		case StateModelSelect:
 			if m.modelIsAdding {
 				if msg.String() == "enter" {
@@ -214,14 +292,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						} else {
 							apiKey := value
 							modelName := m.modelAddingName
-							if err := config.SetAPIKey(modelName, apiKey); err != nil {
+							if err := config.SetAPIKey(modelName, apiKey, m.selectedProvider); err != nil {
 								m.err = err
 							}
 							m.modelList = append(m.modelList[:len(m.modelList)-1], m.modelAddingName, "+ Add new model")
 							m.modelSelectedIndex = len(m.modelList) - 2
 							cfg, err := loadConfig()
 							if err == nil {
-								cfg.Models = append(cfg.Models, m.modelAddingName)
+								cfg.Models = append(cfg.Models, config.ModelConfig{
+									Name:     m.modelAddingName,
+									Provider: m.selectedProvider,
+								})
 								cfg.Save()
 							}
 							m.modelAddingName = ""
@@ -270,10 +351,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.modelList = append(m.modelList[:m.modelSelectedIndex], m.modelList[m.modelSelectedIndex+1:]...)
 					cfg, err := loadConfig()
 					if err == nil {
-						var newModels []string
-						for _, m := range cfg.Models {
-							if m != modelToDelete {
-								newModels = append(newModels, m)
+						var newModels []config.ModelConfig
+						for _, mc := range cfg.Models {
+							if mc.Name != modelToDelete {
+								newModels = append(newModels, mc)
 							}
 						}
 						cfg.Models = newModels
@@ -365,4 +446,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m *Model) updateModelListForProvider(providerID string) {
+	provider := api.GetProvider(providerID)
+	if provider == nil {
+		return
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		m.modelList = append([]string{}, provider.DefaultModels...)
+		m.modelList = append(m.modelList, "+ Add new model")
+		return
+	}
+
+	modelNames := []string{}
+	for _, mc := range cfg.Models {
+		if mc.Provider == providerID {
+			modelNames = append(modelNames, mc.Name)
+		}
+	}
+
+	if len(modelNames) == 0 {
+		modelNames = append([]string{}, provider.DefaultModels...)
+	}
+	modelNames = append(modelNames, "+ Add new model")
+	m.modelList = modelNames
 }

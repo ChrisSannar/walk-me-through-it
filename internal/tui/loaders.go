@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/chrissannar/walk-me-through-it/internal/api"
 	"github.com/chrissannar/walk-me-through-it/internal/config"
 	"github.com/chrissannar/walk-me-through-it/internal/highlighter"
 	"github.com/chrissannar/walk-me-through-it/internal/navigator"
@@ -43,29 +44,45 @@ func NewModel() Model {
 	modelTi.CharLimit = 64
 	modelTi.Focus()
 
-	cfg, _ := loadConfig()
-	models := cfg.Models
-	if len(models) == 0 {
-		models = []string{
-			"gpt-4o",
-			"claude-3-5-sonnet",
-			"gemini-2.0-flash",
-		}
+	keyTi := textinput.New()
+	keyTi.Placeholder = "Enter API key..."
+	keyTi.CharLimit = 512
+	keyTi.EchoMode = textinput.EchoPassword
+	keyTi.Focus()
+
+	providerTi := textinput.New()
+	providerTi.Placeholder = "Enter API key..."
+	providerTi.CharLimit = 512
+	providerTi.EchoMode = textinput.EchoPassword
+	providerTi.Focus()
+
+	providerList := []string{}
+	for _, p := range api.Providers {
+		providerList = append(providerList, p.DisplayName)
 	}
-	models = append(models, "+ Add new model")
+
+	cfg, _ := loadConfig()
+	modelNames := []string{}
+	for _, m := range cfg.Models {
+		modelNames = append(modelNames, m.Name)
+	}
+	modelNames = append(modelNames, "+ Add new model")
 
 	return Model{
-		state:              StateModelSelect,
-		rootPath:           cwd,
-		list:               l,
-		textInput:          ti,
-		walker:             walker.NewWalker(cwd),
-		styles:             NewStyles(),
-		highlighter:        highlighter.NewHighlighter(highlighter.ThemeDracula),
-		modelList:          models,
-		modelSelectedIndex: 0,
-		modelTextInput:     modelTi,
-		modelIsAdding:      false,
+		state:                 StateProviderSelect,
+		rootPath:              cwd,
+		list:                  l,
+		textInput:             ti,
+		walker:                walker.NewWalker(cwd),
+		styles:                NewStyles(),
+		highlighter:           highlighter.NewHighlighter(highlighter.ThemeDracula),
+		modelList:             modelNames,
+		modelSelectedIndex:    0,
+		modelTextInput:        modelTi,
+		modelIsAdding:         false,
+		providerList:          providerList,
+		providerSelectedIndex: 0,
+		providerAskingFor:     "",
 	}
 }
 

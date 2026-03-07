@@ -107,6 +107,79 @@ func (m Model) View() string {
 		}
 		return m.renderCentered(fmt.Sprintf("Loading step...\n\n📄 %s\n📝 %s", step.Title, step.Description))
 
+	case StateProviderSelect:
+		var content strings.Builder
+
+		title := m.styles.HeaderFileStyle.Render("Select Provider")
+		content.WriteString(title)
+		content.WriteString("\n\n")
+
+		for i, provider := range m.providerList {
+			name := provider
+			if i == m.providerSelectedIndex {
+				highlightStyle := lipgloss.NewStyle().
+					Foreground(lipgloss.Color("#85DCFF")).
+					Background(lipgloss.Color("#2D2D3D")).
+					Padding(0, 1)
+				content.WriteString(highlightStyle.Render(" " + name + " "))
+			} else {
+				item := m.styles.StepDescriptionStyle.Render(name)
+				content.WriteString(" ")
+				content.WriteString(item)
+			}
+			content.WriteString("\n")
+		}
+
+		if m.providerAskingFor == "key" {
+			content.WriteString("\n")
+			prompt := "Enter API key for " + m.providerList[m.providerSelectedIndex] + ":"
+			content.WriteString(m.styles.StepDescriptionStyle.Render(prompt))
+			content.WriteString("\n")
+			content.WriteString(m.modelTextInput.View())
+		}
+
+		content.WriteString("\n\n")
+
+		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
+		if m.providerAskingFor == "key" {
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("Enter", "save"),
+				" ",
+				m.styles.RenderKeybinding("Esc", "cancel"),
+			)
+			footerInner := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+			)
+			content.WriteString(footer)
+		} else {
+			footerContent := lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.styles.RenderKeybinding("Enter", "select"),
+				" ",
+				m.styles.RenderKeybinding("q", "back"),
+			)
+			footerInner := m.styles.FooterStyle.Render(footerContent)
+			footer := lipgloss.JoinVertical(
+				lipgloss.Left,
+				footerBorder,
+				footerInner,
+			)
+			content.WriteString(footer)
+		}
+
+		listLines := strings.Split(content.String(), "\n")
+		var result strings.Builder
+		for i := len(listLines); i < m.height; i++ {
+			result.WriteString("\n")
+		}
+		result.WriteString(content.String())
+
+		return result.String()
+
 	case StateConfirmDelete:
 		return m.renderCentered(fmt.Sprintf(
 			"Deleting %s...",

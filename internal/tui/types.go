@@ -19,6 +19,7 @@ const (
 	StateLoadingStep
 	StateConfirmDelete
 	StateModelSelect
+	StateProviderSelect
 )
 
 // walkthroughItem represents a walkthrough file for the list
@@ -50,6 +51,7 @@ type Model struct {
 
 	// Model selection
 	selectedModel      string
+	selectedProvider   string
 	modelList          []string
 	modelSelectedIndex int
 	modelTextInput     textinput.Model
@@ -58,6 +60,11 @@ type Model struct {
 	modelAskingFor     string // "name" or "key"
 	modelDeleteConfirm bool
 	modelError         string
+
+	// Provider selection
+	providerList          []string
+	providerSelectedIndex int
+	providerAskingFor     string // "key" or ""
 
 	// Delete confirmation
 	deleteConfirmPath string

@@ -7,7 +7,12 @@ import (
 	"path/filepath"
 )
 
-type Auth map[string]string
+type KeyEntry struct {
+	APIKey   string `json:"api_key"`
+	Provider string `json:"provider"`
+}
+
+type Auth map[string]KeyEntry
 
 func AuthPath() (string, error) {
 	homeDir, err := os.UserHomeDir()
@@ -68,15 +73,26 @@ func GetAPIKey(modelName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return auth[modelName].APIKey, nil
+}
+
+func GetAPIKeyEntry(modelName string) (KeyEntry, error) {
+	auth, err := LoadAuth()
+	if err != nil {
+		return KeyEntry{}, err
+	}
 	return auth[modelName], nil
 }
 
-func SetAPIKey(modelName, apiKey string) error {
+func SetAPIKey(modelName, apiKey, provider string) error {
 	auth, err := LoadAuth()
 	if err != nil {
 		return err
 	}
-	auth[modelName] = apiKey
+	auth[modelName] = KeyEntry{
+		APIKey:   apiKey,
+		Provider: provider,
+	}
 	return SaveAuth(auth)
 }
 

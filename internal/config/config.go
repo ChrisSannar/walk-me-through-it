@@ -8,10 +8,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ModelConfig holds configuration for a model
+type ModelConfig struct {
+	Name     string `mapstructure:"name"`
+	Provider string `mapstructure:"provider"`
+}
+
 // Config holds the application configuration
 type Config struct {
-	Models     []string `mapstructure:"models"`
-	Selected   string   `mapstructure:"selected"`
+	Models     []ModelConfig `mapstructure:"models"`
+	Selected   string        `mapstructure:"selected"`
 	ConfigDir  string
 	ConfigFile string
 }
@@ -40,7 +46,7 @@ func LoadOrCreate() (*Config, error) {
 	viper.AddConfigPath(cfg.ConfigDir)
 
 	// Set defaults
-	viper.SetDefault("models", []string{})
+	viper.SetDefault("models", []ModelConfig{})
 	viper.SetDefault("selected", "")
 
 	// Try to read existing config
@@ -72,4 +78,23 @@ func (c *Config) Save() error {
 	viper.Set("models", c.Models)
 	viper.Set("selected", c.Selected)
 	return viper.WriteConfig()
+}
+
+// GetModelList returns just the model names for backwards compatibility
+func (c *Config) GetModelList() []string {
+	names := make([]string, len(c.Models))
+	for i, m := range c.Models {
+		names[i] = m.Name
+	}
+	return names
+}
+
+// GetSelectedModelConfig returns the config for the selected model
+func (c *Config) GetSelectedModelConfig() *ModelConfig {
+	for _, m := range c.Models {
+		if m.Name == c.Selected {
+			return &m
+		}
+	}
+	return nil
 }

@@ -5,6 +5,9 @@ Here's the place to put the human readable ideas, potential features, and goals 
 ## Next
 
   - Add the ability to AI generate more walkthroughs
+    * Includes creating schemas and documents for LLMs to follow 2 primary types:
+     > Define the JSON for the LLM to interact with
+     > Define the for WMTI content (how many lines, how much to break down an explination, etc.)
   - Review security flaws in code structure as well as potential vulnerabilities
   - Add json validation. If the file is corrupted (bad line numbers, unparsable, etc.) Don't delete the file, just add an error next to it in the selection screen (contents still there, just no access)
   - Consider how the code can be refactored. Ask the AI to build a walkthrough for what we could do, and why we would do it.

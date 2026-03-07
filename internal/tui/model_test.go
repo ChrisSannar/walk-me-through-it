@@ -21,16 +21,16 @@ func TestModelSelectQGoesBack(t *testing.T) {
 
 	m = updatedModel.(Model)
 
-	if m.state == StateSelecting {
-		t.Logf("SUCCESS: q in StateModelSelect goes back to StateSelecting")
+	if m.state == StateProviderSelect {
+		t.Logf("SUCCESS: q in StateModelSelect goes back to StateProviderSelect")
 	} else if m.state == StateModelSelect {
 		t.Logf("STILL StateModelSelect - might quit")
 	} else {
 		t.Logf("State: %v", m.state)
 	}
 
-	if m.state != StateSelecting {
-		t.Errorf("Expected state to be StateSelecting, got %v", m.state)
+	if m.state != StateProviderSelect {
+		t.Errorf("Expected state to be StateProviderSelect, got %v", m.state)
 	}
 }
 
