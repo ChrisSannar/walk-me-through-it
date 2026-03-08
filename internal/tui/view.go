@@ -138,6 +138,15 @@ func (m Model) View() string {
 			content.WriteString(m.modelTextInput.View())
 		}
 
+		if m.connectionTestResult != "" {
+			content.WriteString("\n\n")
+			if strings.HasPrefix(m.connectionTestResult, "✓") {
+				content.WriteString(m.styles.StepTitleStyle.Render(m.connectionTestResult))
+			} else {
+				content.WriteString(m.styles.ErrorTextStyle.Render(m.connectionTestResult))
+			}
+		}
+
 		content.WriteString("\n\n")
 
 		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
@@ -159,6 +168,8 @@ func (m Model) View() string {
 			footerContent := lipgloss.JoinHorizontal(
 				lipgloss.Center,
 				m.styles.RenderKeybinding("Enter", "select"),
+				" ",
+				m.styles.RenderKeybinding("t", "test"),
 				" ",
 				m.styles.RenderKeybinding("q", "back"),
 			)
@@ -224,6 +235,15 @@ func (m Model) View() string {
 			}
 		}
 
+		if m.connectionTestResult != "" {
+			content.WriteString("\n\n")
+			if strings.HasPrefix(m.connectionTestResult, "✓") {
+				content.WriteString(m.styles.StepTitleStyle.Render(m.connectionTestResult))
+			} else {
+				content.WriteString(m.styles.ErrorTextStyle.Render(m.connectionTestResult))
+			}
+		}
+
 		content.WriteString("\n\n")
 
 		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
@@ -265,6 +285,8 @@ func (m Model) View() string {
 				m.styles.RenderKeybinding("↑↓", "select"),
 				" ",
 				m.styles.RenderKeybinding("Enter", "confirm"),
+				" ",
+				m.styles.RenderKeybinding("t", "test"),
 				" ",
 				m.styles.RenderKeybinding("d", "delete"),
 				" ",

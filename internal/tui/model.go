@@ -1,9 +1,12 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -267,6 +270,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.providerSelectedIndex++
 				}
 				return m, nil
+			case "t":
+				return m, m.testConnection()
 			case "Esc":
 				m.state = StateSelecting
 				return m, nil
@@ -390,6 +395,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.modelSelectedIndex++
 				}
 				return m, nil
+			case "t":
+				return m, m.testConnection()
 			case "Esc":
 				if m.modelDeleteConfirm {
 					m.modelDeleteConfirm = false
@@ -443,6 +450,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = StateViewing
 		}
 		return m, nil
+
+	case connectionTestMsg:
+		if msg.success {
+			m.connectionTestResult = "✓ " + msg.message
+		} else {
+			m.connectionTestResult = "✗ " + msg.message
+		}
+		return m, nil
 	}
 
 	return m, nil
@@ -473,4 +488,64 @@ func (m *Model) updateModelListForProvider(providerID string) {
 	}
 	modelNames = append(modelNames, "+ Add new model")
 	m.modelList = modelNames
+}
+
+func (m Model) testConnection() tea.Cmd {
+	return func() tea.Msg {
+		providerID := m.selectedProvider
+		if providerID == "" {
+			selectedProviderName := m.providerList[m.providerSelectedIndex]
+			for _, p := range api.Providers {
+				if p.DisplayName == selectedProviderName {
+					providerID = p.ID
+					break
+				}
+			}
+		}
+
+		if providerID == "" {
+			return connectionTestMsg{success: false, message: "No provider selected"}
+		}
+
+		entry, err := config.GetAPIKeyEntry(providerID)
+		if err != nil || entry.APIKey == "" {
+			return connectionTestMsg{success: false, message: "No API key found for this provider"}
+		}
+
+		provider := api.GetProvider(providerID)
+		if provider == nil {
+			return connectionTestMsg{success: false, message: "Provider not found"}
+		}
+
+		client := api.NewClient(provider, entry.APIKey)
+		err = client.TestConnection(context.Background())
+		if err != nil {
+			fullErr := err.Error()
+			shortErr := truncateError(fullErr)
+			writeErrorLog(providerID, fullErr)
+			return connectionTestMsg{success: false, message: shortErr}
+		}
+
+		return connectionTestMsg{success: true, message: "Connection successful!"}
+	}
+}
+
+func truncateError(fullErr string) string {
+	lines := strings.Split(fullErr, "\n")
+	firstLine := lines[0]
+	if len(firstLine) > 80 {
+		return firstLine[:77] + "..."
+	}
+	return firstLine
+}
+
+func writeErrorLog(provider, fullErr string) {
+	homeDir, _ := os.UserHomeDir()
+	logDir := filepath.Join(homeDir, ".local", "share", "wmti")
+	os.MkdirAll(logDir, 0755)
+
+	logPath := filepath.Join(logDir, "error.log")
+	logMsg := fmt.Sprintf("[%s] Provider: %s\nError: %s\n\n",
+		time.Now().Format("2006-01-02 15:04:05"), provider, fullErr)
+	os.WriteFile(logPath, []byte(logMsg), 0644)
 }

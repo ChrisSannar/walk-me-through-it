@@ -66,6 +66,9 @@ type Model struct {
 	providerSelectedIndex int
 	providerAskingFor     string // "key" or ""
 
+	// Connection test result
+	connectionTestResult string
+
 	// Delete confirmation
 	deleteConfirmPath string
 	deleteConfirmFor  string // "model" or "walkthrough"
@@ -96,4 +99,9 @@ type fileContentMsg struct {
 	highlightEnd   int
 	displayStart   int
 	displayEnd     int
+}
+
+type connectionTestMsg struct {
+	success bool
+	message string
 }
