@@ -41,18 +41,18 @@ func NewModel() Model {
 
 	modelTi := textinput.New()
 	modelTi.Placeholder = "Enter model name..."
-	modelTi.CharLimit = 64
+	modelTi.CharLimit = 0
 	modelTi.Focus()
 
 	keyTi := textinput.New()
 	keyTi.Placeholder = "Enter API key..."
-	keyTi.CharLimit = 512
+	keyTi.CharLimit = 0
 	keyTi.EchoMode = textinput.EchoPassword
 	keyTi.Focus()
 
 	providerTi := textinput.New()
 	providerTi.Placeholder = "Enter API key..."
-	providerTi.CharLimit = 512
+	providerTi.CharLimit = 0
 	providerTi.EchoMode = textinput.EchoPassword
 	providerTi.Focus()
 

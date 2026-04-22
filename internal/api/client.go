@@ -136,7 +136,7 @@ type GoogleCandidate struct {
 
 func (c *Client) chatGoogle(ctx context.Context, messages []Message) (string, error) {
 	model := c.provider.DefaultModels[0]
-	url := fmt.Sprintf("%s/v1beta/models/%s:generateContent?key=%s", c.provider.BaseURL, model, c.apiKey)
+	url := fmt.Sprintf("%s/v1/models/%s:generateContent", c.provider.BaseURL, model)
 
 	systemPrompt := ""
 	userMessages := []string{}
@@ -179,6 +179,7 @@ func (c *Client) chatGoogle(ctx context.Context, messages []Message) (string, er
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Goog-Api-Key", c.apiKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
