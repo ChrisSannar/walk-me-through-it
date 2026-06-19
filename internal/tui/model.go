@@ -103,6 +103,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			// 'n' key to create new walkthrough
+			if msg.String() == "n" {
+				m.state = StateNewWalkthrough
+				m.newWalkthroughInput.Reset()
+				m.newWalkthroughInput.Placeholder = "What can I walk you through?"
+				return m, nil
+			}
+
 			if msg.String() == "enter" {
 				if m.deleteConfirmPath != "" {
 					// Confirm delete walkthrough
@@ -403,6 +411,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
+
+		case StateNewWalkthrough:
+			switch msg.String() {
+			case "enter":
+				prompt := m.newWalkthroughInput.Value()
+				if prompt != "" {
+					return m, m.generateWalkthrough(prompt)
+				}
+				return m, nil
+			case "Esc":
+				m.state = StateSelecting
+				m.newWalkthroughInput.Reset()
+				return m, nil
+			}
+			var cmd tea.Cmd
+			m.newWalkthroughInput, cmd = m.newWalkthroughInput.Update(msg)
+			return m, cmd
 		}
 
 	case tea.WindowSizeMsg:
@@ -457,6 +482,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.connectionTestResult = "✗ " + msg.message
 		}
+		return m, nil
+
+	case walkthroughGeneratedMsg:
+		m.state = StateSelecting
+		m.newWalkthroughInput.Reset()
+		return m, m.saveGeneratedWalkthrough(msg.content)
+
+	case generationErrorMsg:
+		m.err = msg.err
 		return m, nil
 	}
 
@@ -527,6 +561,91 @@ func (m Model) testConnection() tea.Cmd {
 		}
 
 		return connectionTestMsg{success: true, message: "Connection successful!"}
+	}
+}
+
+func (m Model) generateWalkthrough(prompt string) tea.Cmd {
+	return func() tea.Msg {
+		providerID := m.selectedProvider
+		if providerID == "" {
+			cfg, _ := loadConfig()
+			if cfg != nil {
+				selectedConfig := cfg.GetSelectedModelConfig()
+				if selectedConfig != nil {
+					providerID = selectedConfig.Provider
+					m.selectedProvider = providerID
+				}
+			}
+		}
+
+		if providerID == "" {
+			return generationErrorMsg{err: fmt.Errorf("no provider or model selected. Press 'm' to select a model first.")}
+		}
+
+		entry, err := config.GetAPIKeyEntry(providerID)
+		if err != nil || entry.APIKey == "" {
+			return generationErrorMsg{err: fmt.Errorf("no API key found for this provider. Press 'm' to add one.")}
+		}
+
+		provider := api.GetProvider(providerID)
+		if provider == nil {
+			return generationErrorMsg{err: fmt.Errorf("provider not found: %s", providerID)}
+		}
+
+		client := api.NewClient(provider, entry.APIKey)
+
+		systemPrompt := `You are an expert code walkthrough generator. Create a JSON walkthrough file that explains a codebase to developers.
+Respond with ONLY valid JSON, no markdown formatting or explanation.
+Use this exact schema:
+{
+  "title": "Descriptive Title",
+  "description": "What this walkthrough covers (1-2 sentences)",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Brief Step Title (5-7 words)",
+      "description": "Detailed explanation of what this code does and why it matters.",
+      "file": "relative/path/from/project/root.go",
+      "line_start": 10,
+      "line_end": 50,
+      "action": "read"
+    }
+  ]
+}
+Include 3-5 steps. Use relative paths from project root. Keep line ranges focused (10-50 lines per step).`
+
+		messages := []api.Message{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: prompt},
+		}
+
+		response, err := client.Chat(context.Background(), messages)
+		if err != nil {
+			return generationErrorMsg{err: err}
+		}
+
+		return walkthroughGeneratedMsg{content: response}
+	}
+}
+
+func (m Model) saveGeneratedWalkthrough(content string) tea.Cmd {
+	return func() tea.Msg {
+		parsed := api.ParseMarkdownCodeBlocks(content)
+
+		walkthroughDir := filepath.Join(m.rootPath, ".wmti")
+		if err := os.MkdirAll(walkthroughDir, 0755); err != nil {
+			return errMsg{err: fmt.Errorf("failed to create walkthrough directory: %w", err)}
+		}
+
+		baseName := "generated-" + time.Now().Format("20060102-150405")
+		filePath := filepath.Join(walkthroughDir, baseName+".wmti.json")
+
+		if err := os.WriteFile(filePath, []byte(parsed), 0644); err != nil {
+			return errMsg{err: fmt.Errorf("failed to save walkthrough: %w", err)}
+		}
+
+		return walkthroughLoadedMsg{}
 	}
 }
 

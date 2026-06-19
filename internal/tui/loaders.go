@@ -56,6 +56,11 @@ func NewModel() Model {
 	providerTi.EchoMode = textinput.EchoPassword
 	providerTi.Focus()
 
+	newWalkthroughTi := textinput.New()
+	newWalkthroughTi.Placeholder = "What can I walk you through?"
+	newWalkthroughTi.CharLimit = 0
+	newWalkthroughTi.Focus()
+
 	providerList := []string{}
 	for _, p := range api.Providers {
 		providerList = append(providerList, p.DisplayName)
@@ -83,6 +88,7 @@ func NewModel() Model {
 		providerList:          providerList,
 		providerSelectedIndex: 0,
 		providerAskingFor:     "",
+		newWalkthroughInput:   newWalkthroughTi,
 	}
 }
 

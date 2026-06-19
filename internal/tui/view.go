@@ -67,6 +67,8 @@ func (m Model) View() string {
 			" ",
 			m.styles.RenderKeybinding("d", "delete"),
 			" ",
+			m.styles.RenderKeybinding("n", "new"),
+			" ",
 			m.styles.RenderKeybinding("q", "quit"),
 			" ",
 			m.styles.RenderKeybinding("m", "model"),
@@ -300,6 +302,63 @@ func (m Model) View() string {
 			)
 			content.WriteString(footer)
 		}
+
+		listLines := strings.Split(content.String(), "\n")
+		var result strings.Builder
+		for i := len(listLines); i < m.height; i++ {
+			result.WriteString("\n")
+		}
+		result.WriteString(content.String())
+
+		return result.String()
+
+	case StateNewWalkthrough:
+		var content strings.Builder
+
+		title := m.styles.HeaderFileStyle.Render("Create New Walkthrough")
+		content.WriteString(title)
+		content.WriteString("\n\n")
+
+		promptLabel := m.styles.StepDescriptionStyle.Render("What can I walk you through?")
+		content.WriteString(promptLabel)
+		content.WriteString("\n")
+		content.WriteString(m.newWalkthroughInput.View())
+		content.WriteString("\n\n")
+
+		modelDisplay := m.selectedModel
+		if modelDisplay == "" {
+			cfg, _ := loadConfig()
+			if cfg != nil {
+				selectedConfig := cfg.GetSelectedModelConfig()
+				if selectedConfig != nil {
+					modelDisplay = selectedConfig.Name + " (" + selectedConfig.Provider + ")"
+				}
+			}
+		}
+		if modelDisplay != "" {
+			modelLabel := m.styles.StepDescriptionStyle.Render("Model: ")
+			modelValue := m.styles.StepTitleStyle.Render(modelDisplay)
+			content.WriteString(modelLabel)
+			content.WriteString(modelValue)
+			content.WriteString("\n\n")
+		}
+
+		content.WriteString("\n")
+
+		footerBorder := m.styles.FooterBorderStyle.Render(strings.Repeat("─", m.width))
+		footerContent := lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			m.styles.RenderKeybinding("Enter", "generate"),
+			" ",
+			m.styles.RenderKeybinding("Esc", "cancel"),
+		)
+		footerInner := m.styles.FooterStyle.Render(footerContent)
+		footer := lipgloss.JoinVertical(
+			lipgloss.Left,
+			footerBorder,
+			footerInner,
+		)
+		content.WriteString(footer)
 
 		listLines := strings.Split(content.String(), "\n")
 		var result strings.Builder

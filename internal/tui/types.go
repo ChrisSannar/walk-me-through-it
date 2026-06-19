@@ -20,6 +20,7 @@ const (
 	StateConfirmDelete
 	StateModelSelect
 	StateProviderSelect
+	StateNewWalkthrough
 )
 
 // walkthroughItem represents a walkthrough file for the list
@@ -73,6 +74,9 @@ type Model struct {
 	deleteConfirmPath string
 	deleteConfirmFor  string // "model" or "walkthrough"
 
+	// New walkthrough
+	newWalkthroughInput textinput.Model
+
 	// Line ranges for display
 	highlightStart int
 	highlightEnd   int
@@ -104,4 +108,12 @@ type fileContentMsg struct {
 type connectionTestMsg struct {
 	success bool
 	message string
+}
+
+type walkthroughGeneratedMsg struct {
+	content string
+}
+
+type generationErrorMsg struct {
+	err error
 }
