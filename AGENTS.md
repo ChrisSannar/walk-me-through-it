@@ -99,3 +99,21 @@ Common mistakes: absolute paths; gaps in step IDs; zero-based line numbers (firs
 ## Docs
 
 `docs/SESSIONS.md` (development session history — update it after significant changes) and `docs/NOTES.md` (feature backlog: line highlighting for the current step, chat box in content view, rescan for new walkthroughs, auto-detect AI keys during init, local storage of walkthroughs).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues (via the `gh` CLI); external PRs are **not** a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles using default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Author Notes
+
+When reporting information to me, be extremely concise and sacrifice grammar for sake of concision.
