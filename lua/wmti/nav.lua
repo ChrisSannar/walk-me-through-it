@@ -14,6 +14,34 @@ local function ensure_highlights()
   vim.api.nvim_set_hl(0, "WmtiCurrent", { link = "PmenuSel", default = true })
 end
 
+-- A "normal" editing window: not floating, showing a real file buffer
+-- (buftype ""). Excludes neo-tree, dashboards, terminals, our sidebar, etc.
+local function is_normal_win(win)
+  if not vim.api.nvim_win_is_valid(win) then
+    return false
+  end
+  if vim.api.nvim_win_get_config(win).relative ~= "" then
+    return false -- floating
+  end
+  local buf = vim.api.nvim_win_get_buf(win)
+  return vim.bo[buf].buftype == ""
+end
+
+-- Pick the window the code should jump into: the current one if it's a normal
+-- editing window, else the first normal window on the tab, else the current.
+local function pick_code_win()
+  local cur = vim.api.nvim_get_current_win()
+  if is_normal_win(cur) then
+    return cur
+  end
+  for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if is_normal_win(w) then
+      return w
+    end
+  end
+  return cur
+end
+
 -- HEAD sha of the repo at `root`, or nil when not a git repo / git fails.
 local function head_sha(root)
   local ok, res = pcall(function()
@@ -52,20 +80,37 @@ function M.goto_step(index)
   local step = s.wt.steps[index]
   local full = s.root .. "/" .. step.file
 
-  local lines = nil
+  -- Load the file's buffer and place it directly into the code window. We use
+  -- nvim_win_set_buf (not :edit) so 'switchbuf' and autocmds can't redirect the
+  -- code into some other / extra window — the jump stays in the main window.
+  local lines, cbuf = nil, nil
   local readable = vim.fn.filereadable(full) == 1
   if readable and s.code_win and vim.api.nvim_win_is_valid(s.code_win) then
-    vim.api.nvim_set_current_win(s.code_win)
-    vim.cmd("edit " .. vim.fn.fnameescape(full))
-    s.code_win = vim.api.nvim_get_current_win()
-    local cbuf = vim.api.nvim_win_get_buf(s.code_win)
-    lines = vim.api.nvim_buf_get_lines(cbuf, 0, -1, false)
+    -- Guard bufload/set_buf: a swap file or read error must not crash the
+    -- viewer. Suppress the swap-attention prompt ('A') during the load — this
+    -- is a read-only viewer, so an existing swap (same file open elsewhere)
+    -- shouldn't interrupt — then restore shortmess.
+    local save_sm = vim.o.shortmess
+    if not save_sm:find("A", 1, true) then
+      vim.o.shortmess = save_sm .. "A"
+    end
+    local ok, buf = pcall(function()
+      local b = vim.fn.bufadd(full)
+      vim.fn.bufload(b)
+      vim.bo[b].buflisted = true
+      vim.api.nvim_win_set_buf(s.code_win, b)
+      return b
+    end)
+    vim.o.shortmess = save_sm
+    if ok then
+      cbuf = buf
+      lines = vim.api.nvim_buf_get_lines(cbuf, 0, -1, false)
+    end
   end
 
   local r = core.resolve(step, lines)
 
-  if readable and s.code_win and vim.api.nvim_win_is_valid(s.code_win) then
-    local cbuf = vim.api.nvim_win_get_buf(s.code_win)
+  if cbuf then
     local total = vim.api.nvim_buf_line_count(cbuf)
     local target = math.max(1, math.min(r.line_start, total))
     vim.api.nvim_win_set_cursor(s.code_win, { target, 0 })
@@ -75,6 +120,7 @@ function M.goto_step(index)
     highlight_range(s, cbuf, r.line_start, r.line_end)
   end
 
+  -- Focus stays in the sidebar (we never moved it) so stepping keeps working.
   if s.side_win and vim.api.nvim_win_is_valid(s.side_win) then
     vim.api.nvim_set_current_win(s.side_win)
   end
@@ -98,7 +144,7 @@ function M.open(path)
     path = path,
     wt = wt,
     index = 1,
-    code_win = vim.api.nvim_get_current_win(),
+    code_win = pick_code_win(),
     root = root,
     ns = vim.api.nvim_create_namespace("wmti_code"),
     stale = false,
@@ -117,8 +163,7 @@ function M.next()
     return
   end
   if s.index >= #s.wt.steps then
-    vim.notify("wmti: end of walkthrough", vim.log.levels.INFO)
-    return
+    return -- at the end; the sidebar already shows where you are
   end
   M.goto_step(s.index + 1)
 end
@@ -129,8 +174,7 @@ function M.prev()
     return
   end
   if s.index <= 1 then
-    vim.notify("wmti: start of walkthrough", vim.log.levels.INFO)
-    return
+    return -- at the start; the sidebar already shows where you are
   end
   M.goto_step(s.index - 1)
 end

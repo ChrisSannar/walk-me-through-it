@@ -4,6 +4,26 @@ local M = {}
 
 local config = require("wmti.config")
 
+-- Color coding for the explanation window. All link to standard groups with
+-- default=true, so a user's colorscheme / overrides win.
+local function ensure_highlights()
+  local links = {
+    WmtiTitle = "Title",
+    WmtiRule = "NonText",
+    WmtiStale = "WarningMsg",
+    WmtiStepCurrent = "Title",
+    WmtiStepIdle = "Comment",
+    WmtiLocation = "Directory",
+    WmtiFlag = "WarningMsg",
+    WmtiWhy = "Normal",
+    WmtiHelp = "Comment",
+    WmtiCurrentBg = "CursorLine",
+  }
+  for group, target in pairs(links) do
+    vim.api.nvim_set_hl(0, group, { link = target, default = true })
+  end
+end
+
 -- Greedy word-wrap to `width` columns.
 local function wrap(text, width)
   local out, line = {}, ""
@@ -27,6 +47,8 @@ end
 
 -- Open the sidebar split, storing window/buffer/namespace on the session.
 function M.open(s)
+  ensure_highlights()
+
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].buftype = "nofile"
@@ -68,50 +90,68 @@ function M.render(s, resolved)
   end
   local width = config.options.width
   local rule = string.rep("─", math.max(1, width - 2))
-  local lines, cur_line = {}, nil
 
-  table.insert(lines, s.wt.title or "Walkthrough")
-  table.insert(lines, rule)
-  if s.stale then
-    table.insert(lines, "⚠ authored against older code")
+  -- rows: { text, group?, bg? }. One highlight group per line keeps multibyte
+  -- markers (▶ ─ ⚠ ⏎) off the column math.
+  local rows, cur_line = {}, nil
+  local function add(text, group, bg)
+    rows[#rows + 1] = { text = text, group = group, bg = bg }
   end
-  table.insert(lines, "")
+
+  add(s.wt.title or "Walkthrough", "WmtiTitle")
+  add(rule, "WmtiRule")
+  if s.stale then
+    add("⚠ authored against older code", "WmtiStale")
+  end
+  add("")
 
   for i, step in ipairs(s.wt.steps) do
-    local marker = (i == s.index) and "▶ " or "  "
-    table.insert(lines, marker .. i .. ". " .. step.title)
-    if i == s.index then
-      cur_line = #lines - 1
+    local current = (i == s.index)
+    local marker = current and "▶ " or "  "
+    add(marker .. i .. ". " .. step.title, current and "WmtiStepCurrent" or "WmtiStepIdle", current and "WmtiCurrentBg")
+    if current then
+      cur_line = #rows - 1
       local loc = (resolved and resolved.line_start) or step.line_start
-      table.insert(lines, "    " .. step.file .. ":" .. loc)
+      add("    " .. step.file .. ":" .. loc, "WmtiLocation")
       if resolved and resolved.status == "moved" then
-        table.insert(lines, "    ⚠ may have moved")
+        add("    ⚠ may have moved", "WmtiFlag")
       elseif resolved and resolved.status == "missing" then
-        table.insert(lines, "    ⚠ file missing")
+        add("    ⚠ file missing", "WmtiFlag")
       end
-      table.insert(lines, "")
+      add("")
       for _, wl in ipairs(wrap(step.why, width - 4)) do
-        table.insert(lines, "  " .. wl)
+        add("  " .. wl, "WmtiWhy")
       end
-      table.insert(lines, "")
+      add("")
     end
   end
 
-  table.insert(lines, rule)
-  table.insert(lines, "n next · p prev · ⏎ dive · q close")
+  add(rule, "WmtiRule")
+  add("n next · p prev · ⏎ dive · q close", "WmtiHelp")
+
+  local text = {}
+  for _, r in ipairs(rows) do
+    text[#text + 1] = r.text
+  end
 
   vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, text)
   vim.bo[buf].modifiable = false
 
   local ns = s.side_ns
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-  vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, { line_hl_group = "Title", hl_eol = true })
-  if cur_line then
-    vim.api.nvim_buf_set_extmark(buf, ns, cur_line, 0, { line_hl_group = "WmtiCurrent", hl_eol = true })
-    if s.side_win and vim.api.nvim_win_is_valid(s.side_win) then
-      pcall(vim.api.nvim_win_set_cursor, s.side_win, { cur_line + 1, 0 })
+  for i, r in ipairs(rows) do
+    local line0 = i - 1
+    if r.bg then
+      vim.api.nvim_buf_set_extmark(buf, ns, line0, 0, { line_hl_group = r.bg, hl_eol = true })
     end
+    if r.group then
+      pcall(vim.api.nvim_buf_add_highlight, buf, ns, r.group, line0, 0, -1)
+    end
+  end
+
+  if cur_line and s.side_win and vim.api.nvim_win_is_valid(s.side_win) then
+    pcall(vim.api.nvim_win_set_cursor, s.side_win, { cur_line + 1, 0 })
   end
 end
 

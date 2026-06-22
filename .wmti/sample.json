@@ -1,16 +1,16 @@
 {
   "version": "1.0.0",
   "title": "wmti walks itself",
-  "description": "A guided tour of the wmti viewer's own architecture: a pure core wrapped in a thin Neovim shell. Read top to bottom to see how a :WmtiOpen turns a JSON file into a stepped, drift-tolerant tour.",
+  "description": "A guided tour of the wmti viewer's own architecture: a pure core wrapped in a thin Neovim shell. Read top to bottom to see how a single :Wmti turns a JSON file into a stepped, drift-tolerant tour.",
   "base_sha": "525135e",
   "steps": [
     {
       "file": "plugin/wmti.lua",
-      "line_start": 7,
-      "line_end": 17,
-      "anchor": "local function cmd(name, fn)",
-      "title": "Commands are the only entry point",
-      "why": "The plugin ships no default keymaps — it exposes itself purely through :Wmti* commands so it never clobbers your bindings. Each command thunks into require('wmti'), which is what lets lazy.nvim defer loading until you actually run one."
+      "line_start": 11,
+      "line_end": 38,
+      "anchor": "local subcommands = {",
+      "title": "One command, many subcommands",
+      "why": "The plugin exposes a single :Wmti command that dispatches on its first argument (open is the default), with Tab-completion over the subcommand table. Native Vim command names must be uppercase + alphanumeric, so this is the idiomatic stand-in for a lowercase `wmti` / `wmti next` CLI feel — and it lets lazy.nvim defer loading until you actually run it."
     },
     {
       "file": "lua/wmti/init.lua",
@@ -18,7 +18,7 @@
       "line_end": 23,
       "anchor": "function M.open()",
       "title": "Open flow: notify, auto, or pick",
-      "why": "The open decision lives here, not in the UI: zero walkthroughs notify, exactly one auto-opens (no wasted keystroke), many fall through to the picker. :WmtiSelect reuses select() to always re-prompt."
+      "why": "The open decision lives here, not in the UI: zero walkthroughs notify, exactly one auto-opens (no wasted keystroke), many fall through to the picker. :Wmti select reuses select() to always re-prompt."
     },
     {
       "file": "lua/wmti/walkthrough.lua",
@@ -38,19 +38,19 @@
     },
     {
       "file": "lua/wmti/nav.lua",
-      "line_start": 45,
-      "line_end": 79,
+      "line_start": 73,
+      "line_end": 110,
       "anchor": "function M.goto_step(index)",
-      "title": "Wiring core into windows",
-      "why": "goto_step is the seam between pure logic and the editor: it loads the file into the code window, feeds its lines to core.resolve, then centers and highlights the result — and deliberately returns focus to the sidebar so you can keep stepping (sidebar-driven preview)."
+      "title": "Jumping inside your own window",
+      "why": "goto_step is the seam between pure logic and the editor. It loads the step's file with nvim_win_set_buf (never :edit) so 'switchbuf' and autocmds can't fling the code into an extra window — the jump stays in your main window. A swap file can't crash it, it centers + highlights the resolved range, then hands focus back to the sidebar so stepping keeps flowing."
     },
     {
       "file": "lua/wmti/sidebar.lua",
-      "line_start": 64,
-      "line_end": 80,
-      "anchor": "function M.render(s, resolved)",
-      "title": "What you actually read",
-      "why": "The sidebar shows every step's title but the full 'why' for the current step only, plus its resolved location and any 'may have moved' / 'file missing' flag. Re-rendering from scratch each step keeps the panel a dumb projection of session state."
+      "line_start": 9,
+      "line_end": 27,
+      "anchor": "local function ensure_highlights()",
+      "title": "Color coding the explanation",
+      "why": "The sidebar is a dumb projection of session state, re-rendered each step. These highlight groups give it structure at a glance — the title, the current step, file locations, status flags, and the why-prose each get their own color, all linked default=true so your colorscheme still wins."
     },
     {
       "file": "tests/core_spec.lua",

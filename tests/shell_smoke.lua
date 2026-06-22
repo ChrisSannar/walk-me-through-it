@@ -22,11 +22,11 @@ check(nav.session ~= nil, "session created by open")
 check(nav.session.side_win and vim.api.nvim_win_is_valid(nav.session.side_win), "sidebar window is valid")
 check(nav.session.index == 1, "lands on step 1")
 
-local c1 = vim.api.nvim_win_get_cursor(nav.session.code_win)[1]
+local b1 = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(nav.session.code_win))
 nav.next()
 check(nav.session.index == 2, "next advances the index")
-local c2 = vim.api.nvim_win_get_cursor(nav.session.code_win)[1]
-check(c1 ~= c2, "code window cursor moved between steps (" .. c1 .. " -> " .. c2 .. ")")
+local b2 = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(nav.session.code_win))
+check(b1 ~= b2, "code window switched files between steps")
 
 local sb = vim.api.nvim_buf_get_lines(nav.session.side_buf, 0, -1, false)
 check(sb[1] == "wmti walks itself", "sidebar shows the walkthrough title")
