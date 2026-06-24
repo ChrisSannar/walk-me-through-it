@@ -12,9 +12,9 @@ below. Because the viewer is git-agnostic, the same tool serves recent-change
 overviews, onboarding tours, and PR reviews — the difference is just what you put in
 the JSON.
 
-> Status: the viewer (this README) is working. The portable authoring skill that
-> teaches coding agents to write Walkthroughs is a separate deliverable, not yet
-> shipped — for now, write the JSON by hand (see [`.wmti/sample.json`](.wmti/sample.json)).
+Walkthroughs are written either by hand or by a coding agent guided by the bundled
+[authoring skill](#authoring) — see [`.wmti/sample.json`](.wmti/sample.json) for a worked
+example.
 
 ## Requirements
 
@@ -134,6 +134,25 @@ against the file as it exists now:
 If `base_sha` is set and `HEAD` differs (in a git repo), the sidebar shows a
 non-blocking **authored against older code** note. Outside git, or with no
 `base_sha`, staleness checks stay silent.
+
+## Authoring
+
+Walkthroughs can be written by hand, but the intended path is to let the coding agent
+that made a change also write the tour — it already holds the *why*. A portable,
+self-contained Agent Skill ships in this repo for that:
+
+```
+skills/wmti/
+  SKILL.md                  # authoring directions (user-invoked)
+  walkthrough.schema.json   # the JSON Schema (draft 2020-12) contract
+  INSTALL.md                # how to add the skill to another agent / project
+```
+
+It's plain markdown + JSON, so it works with any agent that supports the Agent Skills /
+`SKILL.md` standard (Claude Code, Codex CLI, Gemini CLI, Cursor, Copilot, …). In Claude
+Code, invoke it with `/wmti`. To add it to another project or agent, see
+[`skills/wmti/INSTALL.md`](skills/wmti/INSTALL.md). The schema doubles as the validation
+contract.
 
 ## Development
 

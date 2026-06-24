@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "title": "How a step survives code drift",
+  "description": "The three moves in core.resolve that let a walkthrough still land on the right code after it has moved since authoring.",
+  "base_sha": "ea9134b",
+  "steps": [
+    {
+      "file": "lua/wmti/core.lua",
+      "line_start": 27,
+      "line_end": 38,
+      "anchor": "local function find_nearest(lines, pred, origin)",
+      "title": "Find the closest matching line",
+      "why": "Scans the buffer for any line matching a predicate and returns the hit nearest the original position — the primitive both anchor searches lean on."
+    },
+    {
+      "file": "lua/wmti/core.lua",
+      "line_start": 44,
+      "line_end": 58,
+      "anchor": "function M.resolve(step, lines)",
+      "title": "Search by anchor, exact then loose",
+      "why": "Hunts for the step's anchor text — exact match first, then whitespace-trimmed — choosing the occurrence closest to where it used to be."
+    },
+    {
+      "file": "lua/wmti/core.lua",
+      "line_start": 59,
+      "line_end": 62,
+      "anchor": "  if found then",
+      "title": "Re-span on a hit, flag on a miss",
+      "why": "A hit re-spans the range at the new location and reports ok; a miss falls back to the recorded line, flagged moved so the reader knows it drifted."
+    }
+  ]
+}

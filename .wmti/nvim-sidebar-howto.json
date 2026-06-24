@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "title": "Create a Neovim sidebar in Lua",
+  "description": "The moves that turn an empty buffer into a side panel, using wmti's sidebar as the example. A recipe, one move per step.",
+  "base_sha": "ea9134b",
+  "steps": [
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 52,
+      "line_end": 52,
+      "anchor": "  local buf = vim.api.nvim_create_buf(false, true)",
+      "title": "Make a scratch buffer",
+      "why": "The panel is UI, not a file, so make an unlisted scratch buffer — nothing the buffer list or :w can grab onto."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 53,
+      "line_end": 56,
+      "anchor": "  vim.bo[buf].bufhidden = \"wipe\"",
+      "title": "Mark it throwaway",
+      "why": "nofile + wipe-on-hide + no-swap tell Neovim never to treat it as a real file to save or recover."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 58,
+      "line_end": 58,
+      "anchor": "  vim.cmd(config.options.side == \"left\" and \"topleft vsplit\" or \"botright vsplit\")",
+      "title": "Split to the edge",
+      "why": "botright (or topleft) vsplit drops a new window hard against the right/left edge, full height — the side placement."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 59,
+      "line_end": 61,
+      "anchor": "  local win = vim.api.nvim_get_current_win()",
+      "title": "Fill and size the window",
+      "why": "Grab the fresh window's handle, drop the scratch buffer into it, and pin the width so it stays a narrow column."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 63,
+      "line_end": 69,
+      "anchor": "  vim.wo[win].number = false",
+      "title": "Strip the editor chrome",
+      "why": "Window-local options drop numbers, signs and wrap so it reads as UI; winfixwidth stops other splits from resizing it."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 71,
+      "line_end": 73,
+      "anchor": "  s.side_win = win",
+      "title": "Stash the handles",
+      "why": "Keep the window, buffer and highlight namespace on the session so every later render can find and redraw the panel."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 44,
+      "line_end": 46,
+      "anchor": "local function map(buf, lhs, fn)",
+      "title": "Scope keys to the buffer",
+      "why": "A tiny helper passing buffer=buf scopes every mapping to this buffer, so the panel's keys never shadow your global ones."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 75,
+      "line_end": 81,
+      "anchor": "  local nav = require(\"wmti.nav\")",
+      "title": "Wire the keys",
+      "why": "Bind n/p/Tab/Enter/q to the nav actions — they fire only inside the sidebar, leaving those keys untouched elsewhere."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 137,
+      "line_end": 139,
+      "anchor": "  vim.bo[buf].modifiable = true",
+      "title": "Write the lines",
+      "why": "Flip modifiable on, replace every line, flip it back off — the panel is redrawn wholesale rather than edited in place."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 141,
+      "line_end": 151,
+      "anchor": "  local ns = s.side_ns",
+      "title": "Color it with extmarks",
+      "why": "Apply per-line highlights through a dedicated namespace, cleared and reapplied each render so styling never piles up."
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chrissannar/walk-me-through-it/walkthrough.schema.json",
+  "title": "wmti Walkthrough",
+  "description": "A wmti Walkthrough: an ordered, JSON tour of a codebase or change set that the wmti Neovim viewer steps through. NOTE: line_end >= line_start is a semantic rule the viewer enforces at load/resolve time; JSON Schema (draft 2020-12) cannot compare two sibling values, so it is documented here rather than expressed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "steps"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Shown in the selection list and the sidebar header."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered Steps. Array position is the Step order — there are no ids.",
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "version": {
+      "type": "string",
+      "description": "Optional. Semver, e.g. \"1.0.0\"."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional. 1-2 sentences: scope and audience of the Walkthrough."
+    },
+    "base_sha": {
+      "type": "string",
+      "description": "Optional. The commit the Walkthrough was authored against. If set and HEAD differs in a git repo, the viewer shows a non-blocking \"authored against older code\" note."
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line_start", "line_end", "title", "why"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$)).+$",
+          "description": "Path relative to the project root, forward slashes. No leading '/' and no '..' segments."
+        },
+        "line_start": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based first line of the Step's range."
+        },
+        "line_end": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based last line of the Step's range. Must be >= line_start (viewer-enforced). Keep ranges focused (~10-50 lines)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short Step title (~5-7 words)."
+        },
+        "why": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this code matters / why it changed — intent, not a restatement of the code."
+        },
+        "anchor": {
+          "type": "string",
+          "description": "Optional but strongly recommended: the verbatim text of the line_start line. The viewer uses it to relocate the Step when code drifts. Omit it and the viewer falls back to raw line numbers."
+        }
+      }
+    }
+  }
+}

@@ -114,6 +114,10 @@ Five canonical roles using default label strings (`needs-triage`, `needs-info`, 
 
 Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### Authoring walkthroughs
+
+The viewer is a dumb reader (ADR-0001); Walkthroughs are authored by an agent or human against the schema. Portable, self-contained, user-invoked skill: `skills/wmti/SKILL.md` (contract: `skills/wmti/walkthrough.schema.json`; install: `skills/wmti/INSTALL.md`).
+
 ## Author Notes
 
 When reporting information to me, be extremely concise and sacrifice grammar for sake of concision.

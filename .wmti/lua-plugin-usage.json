@@ -1,0 +1,72 @@
+{
+  "version": "1.0.0",
+  "title": "How the wmti Lua plugin is used",
+  "description": "The usage path end to end: invoke, configure, open, discover, drive, step. For learning to use wmti, not modify it.",
+  "base_sha": "ea9134b",
+  "steps": [
+    {
+      "file": "plugin/wmti.lua",
+      "line_start": 11,
+      "line_end": 18,
+      "anchor": "local subcommands = {",
+      "title": "The verbs you can run",
+      "why": "open / next / prev / close / select / dive — the entire command surface, one table you can read at a glance."
+    },
+    {
+      "file": "plugin/wmti.lua",
+      "line_start": 20,
+      "line_end": 27,
+      "anchor": "vim.api.nvim_create_user_command(\"Wmti\", function(opts)",
+      "title": "One :Wmti, dispatched",
+      "why": "The first argument is the verb (defaulting to open); each maps to a module function, which is what lets the plugin lazy-load on first use."
+    },
+    {
+      "file": "lua/wmti/config.lua",
+      "line_start": 4,
+      "line_end": 8,
+      "anchor": "M.defaults = {",
+      "title": "What you configure",
+      "why": "Just three knobs — which side, how wide, and which directory to scan — set once via setup{} or your lazy.nvim opts."
+    },
+    {
+      "file": "lua/wmti/init.lua",
+      "line_start": 11,
+      "line_end": 22,
+      "anchor": "function M.open()",
+      "title": "Open adapts to what it finds",
+      "why": "The open flow adjusts to your project: zero walkthroughs just notify, exactly one opens straight in, several drop you into a picker."
+    },
+    {
+      "file": "lua/wmti/walkthrough.lua",
+      "line_start": 8,
+      "line_end": 13,
+      "anchor": "function M.discover(root)",
+      "title": "Where it looks",
+      "why": "It globs .wmti/*.json under your working directory, so discovery only finds anything when you launch Neovim from the project root."
+    },
+    {
+      "file": "lua/wmti/sidebar.lua",
+      "line_start": 75,
+      "line_end": 81,
+      "anchor": "  local nav = require(\"wmti.nav\")",
+      "title": "Keys you drive it with",
+      "why": "The sidebar binds n/p/Tab/Enter/q buffer-locally and keeps focus, so you step through the tour without ever leaving the panel."
+    },
+    {
+      "file": "lua/wmti/nav.lua",
+      "line_start": 73,
+      "line_end": 81,
+      "anchor": "function M.goto_step(index)",
+      "title": "Each step jumps your window",
+      "why": "Each step loads its file into your existing main window (not a new split) and centers the line it points at."
+    },
+    {
+      "file": "lua/wmti/core.lua",
+      "line_start": 44,
+      "line_end": 63,
+      "anchor": "function M.resolve(step, lines)",
+      "title": "Why it survives edits",
+      "why": "It re-locates each step by its anchor text, so even after the code moves the reader still lands on the right lines."
+    }
+  ]
+}
